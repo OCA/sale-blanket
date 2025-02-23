@@ -200,6 +200,8 @@ class SaleOrderLine(models.Model):
             res = self.env.cr.fetchall()
             if res:
                 sol = self.browse(res[0][0])
+                if sol.product_id.allow_blanket_order_overlap:
+                    continue
                 raise ValidationError(
                     _(
                         "The product '%(product_name)s' is already part of another "

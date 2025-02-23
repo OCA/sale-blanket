@@ -89,6 +89,8 @@ class TestSaleBlanketOrder(SaleOrderBlanketOrderCase):
             ),
         ):
             order.action_confirm()
+        self.product_1.allow_blanket_order_overlap = True
+        order.action_confirm()
 
     def test_reservation(self):
         # Confirm the blanket order with reservation at call off

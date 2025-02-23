@@ -13,6 +13,7 @@
     ],
     "excludes": ["sale_blanket_order"],
     "data": [
+        "views/product_template.xml",
         "views/sale_order.xml",
         "views/sale_order_line.xml",
         "views/res_config_settings.xml",

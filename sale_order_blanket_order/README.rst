@@ -37,17 +37,17 @@ Blanket Order
 A Blanket Order is a standard sales order with the following specific
 features:
 
-- Type: Classified as "Blanket Order".
-- Defined Duration: Includes a validity period (end date).
-- Payment Terms: Allows selection of preferred terms (e.g., 90 days end
-  of month, upon delivery, etc.).
-- Invoicing Policy: Can be based on product settings or the order
-  itself.
-- Stock Reservation: Allows advance reservation of sold quantities.
-- Handling Unfulfilled Quantities: Provides options for dealing with
-  undelivered quantities upon order expiration.
-- Prices are calculated based on existing rules since it is a standard
-  sales order type.
+-  Type: Classified as "Blanket Order".
+-  Defined Duration: Includes a validity period (end date).
+-  Payment Terms: Allows selection of preferred terms (e.g., 90 days end
+   of month, upon delivery, etc.).
+-  Invoicing Policy: Can be based on product settings or the order
+   itself.
+-  Stock Reservation: Allows advance reservation of sold quantities.
+-  Handling Unfulfilled Quantities: Provides options for dealing with
+   undelivered quantities upon order expiration.
+-  Prices are calculated based on existing rules since it is a standard
+   sales order type.
 
 The blanket order serves as the central element triggering stock
 management and invoicing mechanisms.
@@ -94,12 +94,12 @@ Call-off Order
 A Call-off Order is a standard sales order with these specific
 characteristics:
 
-- Type: Classified as "Call-off Order".
-- Linked to Blanket Order: Only includes products from the blanket
-  order.
-- Delivery Release: Enables the release of reserved stock for delivery.
-- No Invoicing or Stock Management: These are handled via the linked
-  blanket order.
+-  Type: Classified as "Call-off Order".
+-  Linked to Blanket Order: Only includes products from the blanket
+   order.
+-  Delivery Release: Enables the release of reserved stock for delivery.
+-  No Invoicing or Stock Management: These are handled via the linked
+   blanket order.
 
 Stock Management
 ----------------
@@ -108,8 +108,8 @@ No delivery is generated directly from the call-off order.
 
 It triggers:
 
-- Release of the reserved quantity in the blanket order.
-- Adjustment of stock reservations for the remaining quantities.
+-  Release of the reserved quantity in the blanket order.
+-  Adjustment of stock reservations for the remaining quantities.
 
 Standard Sales Orders
 =====================
@@ -137,9 +137,9 @@ that defines the terms and conditions of the sales.
 
 If you need a way to define:
 
-- the terms and conditions of the sales,
-- the payment terms,
-- the delivery terms,
+-  the terms and conditions of the sales,
+-  the payment terms,
+-  the delivery terms,
 
 and also secure the quantities of the products to be delivered, the sale
 order blanket order module is the right choice.
@@ -195,15 +195,15 @@ Authors
 Contributors
 ------------
 
-- Laurent Mignon\ laurent.mignon@acsone.eu (https://www.acsone.eu)
-- Jacques-Etienne Baudoux (BCIM) je@bcim.be
+-  Laurent Mignon\ laurent.mignon@acsone.eu (https://www.acsone.eu)
+-  Jacques-Etienne Baudoux (BCIM) je@bcim.be
 
 Other credits
 -------------
 
 The development of this module has been financially supported by:
 
-- ALCYON Belux
+-  ALCYON Belux
 
 Maintainers
 -----------
