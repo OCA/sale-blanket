@@ -9,6 +9,7 @@ setuptools.setup(
     version=version,
     install_requires=[
         'odoo-addon-sale_order_blanket_order>=16.0dev,<16.1dev',
+        'odoo-addon-sale_order_blanket_order_sale_margin>=16.0dev,<16.1dev',
         'odoo-addon-sale_order_blanket_order_stock_prebook>=16.0dev,<16.1dev',
     ],
     classifiers=[
