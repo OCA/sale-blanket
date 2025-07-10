@@ -6,6 +6,7 @@ from datetime import datetime
 import freezegun
 
 from odoo import Command
+from odoo.exceptions import ValidationError
 
 from .common import SaleOrderBlanketOrderStockPrebookReleaseCase
 
@@ -169,3 +170,18 @@ class TestSaleOrderBlanketOrderStockPrebookRelease(
             self.assertEqual(
                 move.date_priority, self.blanket_so.blanket_move_date_priority
             )
+
+    def test_confirm_dates_validation_not_broken_on_confirm(self):
+        """Ensure the dates validation occurs when confirming a blanket order.
+
+        This unit test addresses a bug where a computed field's calculation was
+        triggered before essential date validation (defined by @api.constrains).
+        The bug arose because the compute method did not account for potentially
+        empty date fields, leading to a stack trace in the UI instead of a nice
+        Validation Error pop up.
+        """
+        self.blanket_so.write(
+            {"blanket_validity_start_date": False, "blanket_validity_end_date": False}
+        )
+        with self.assertRaises(ValidationError):
+            self.blanket_so.action_confirm()
