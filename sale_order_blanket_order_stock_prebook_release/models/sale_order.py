@@ -27,7 +27,11 @@ class SaleOrder(models.Model):
         the confirmation date by blanket_validity_start_date.
         This method is called at the start of the confirmation process.
         """
-        blankets = self.filtered(lambda o: o.order_type == "blanket")
+
+        # ensure validity_start_date is set otherwise sql query will fail
+        blankets = self.filtered(
+            lambda o: o.order_type == "blanket" and o.blanket_validity_start_date
+        )
         # we need to query the count of confirmed blanket orders for each
         # blanket_validity_start_date
         if not blankets:
