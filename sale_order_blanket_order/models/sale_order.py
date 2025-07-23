@@ -286,7 +286,7 @@ class SaleOrder(models.Model):
         for order in self:
             order.show_deliver_remaining = (
                 order.order_type == "blanket"
-                and order.state == "sale"
+                and order.state in ("sale", "done")
                 and any(line.call_off_remaining_qty > 0 for line in order.order_line)
             )
 
