@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from datetime import timedelta
 
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class SaleOrder(models.Model):
@@ -12,6 +12,8 @@ class SaleOrder(models.Model):
         string="Move Date Priority",
         help="Date priority for the moves of the order.",
     )
+
+    commitment_date = fields.Datetime(compute="_compute_commitment_date", store=True)
 
     def action_confirm(self):
         self.flush_recordset()
@@ -63,3 +65,26 @@ class SaleOrder(models.Model):
                 start_date
             ) + timedelta(seconds=order_position)
             count_per_date[start_date] = order_position + 1
+
+    @api.depends("blanket_validity_start_date")
+    def _compute_commitment_date(self):
+        blanket_orders = self.filtered(
+            lambda o: o.order_type == "blanket" and o.state != "draft"
+        )
+        if not blanket_orders:
+            return
+
+        for order in blanket_orders:
+            order.commitment_date = order.blanket_validity_start_date
+
+        blanket_orders._compute_blanket_move_date_priority()
+
+        out_moves = self.env["stock.move"].search(
+            [
+                ("sale_line_id.order_id", "in", self.ids),
+                ("state", "not in", ("done", "cancel")),
+                ("picking_type_id.code", "=", "outgoing"),
+            ]
+        )
+        for move in out_moves:
+            move.date_priority = move.sale_line_id.order_id.blanket_move_date_priority

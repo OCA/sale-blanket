@@ -1,7 +1,7 @@
 # Copyright 2025 ACSONE SA/NV
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
-from datetime import datetime
+from datetime import date, datetime
 
 import freezegun
 
@@ -170,6 +170,42 @@ class TestSaleOrderBlanketOrderStockPrebookRelease(
             self.assertEqual(
                 move.date_priority, self.blanket_so.blanket_move_date_priority
             )
+
+    @freezegun.freeze_time("2025-01-01 00:00:00")
+    def test_date_priority_after_blanket_validity_start_date_change(self):
+        self.blanket_so.action_confirm()
+        self.assertEqual(self.blanket_so.blanket_validity_start_date, date(2025, 1, 1))
+        self.assertEqual(self.blanket_so.commitment_date.date(), date(2025, 1, 1))
+        call_off_so = self.env["sale.order"].create(
+            {
+                "order_type": "call_off",
+                "date_order": "2025-02-01",
+                "partner_id": self.partner_delta.id,
+                "blanket_order_id": self.blanket_so.id,
+                "order_line": [
+                    Command.create(
+                        {
+                            "product_id": self.product1.id,
+                            "product_uom_qty": 10.0,
+                        }
+                    ),
+                ],
+            }
+        )
+        call_off_so.action_confirm()
+
+        picking = call_off_so.order_line.blanket_move_ids.picking_id
+        picking.action_assign()
+        out_moves = picking.move_ids
+        self.assertEqual(
+            out_moves.date_priority.date(), self.blanket_so.blanket_validity_start_date
+        )
+
+        self.blanket_so.blanket_validity_start_date = date(2025, 1, 2)
+        self.assertEqual(self.blanket_so.commitment_date.date(), date(2025, 1, 2))
+        self.assertEqual(
+            out_moves.date_priority.date(), self.blanket_so.blanket_validity_start_date
+        )
 
     def test_confirm_dates_validation_not_broken_on_confirm(self):
         """Ensure the dates validation occurs when confirming a blanket order.
