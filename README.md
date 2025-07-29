@@ -24,7 +24,7 @@ addon | version | maintainers | summary
 [sale_order_blanket_order](sale_order_blanket_order/) | 16.0.1.0.0 |  | Manage blanket order and call of ordr
 [sale_order_blanket_order_sale_margin](sale_order_blanket_order_sale_margin/) | 16.0.1.0.0 |  | Ensure sale margins are properly set on call off order lines
 [sale_order_blanket_order_stock_prebook](sale_order_blanket_order_stock_prebook/) | 16.0.1.0.0 |  | Allow to prebook stock for blanket order
-[sale_order_blanket_order_stock_prebook_release](sale_order_blanket_order_stock_prebook_release/) | 16.0.1.0.0 |  | Ensure that the date priotity when releasing qty is the start date of the blanker order
+[sale_order_blanket_order_stock_prebook_release](sale_order_blanket_order_stock_prebook_release/) | 16.0.1.0.1 |  | Ensure that the date priotity when releasing qty is the start date of the blanker order
 
 [//]: # (end addons)
 
