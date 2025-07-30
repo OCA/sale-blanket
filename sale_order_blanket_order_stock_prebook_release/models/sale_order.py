@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from datetime import timedelta
 
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class SaleOrder(models.Model):
@@ -13,7 +13,11 @@ class SaleOrder(models.Model):
         help="Date priority for the moves of the order.",
     )
 
-    commitment_date = fields.Datetime(compute="_compute_commitment_date", store=True)
+    commitment_date = fields.Datetime(inverse="_inverse_commitment_date")
+
+    blanket_validity_start_date = fields.Date(
+        inverse="_inverse_blanket_validity_start_date"
+    )
 
     def action_confirm(self):
         self.flush_recordset()
@@ -66,12 +70,31 @@ class SaleOrder(models.Model):
             ) + timedelta(seconds=order_position)
             count_per_date[start_date] = order_position + 1
 
-    @api.depends("blanket_validity_start_date")
-    def _compute_commitment_date(self):
+    def _inverse_commitment_date(self):
         blanket_orders = self.filtered(
             lambda o: o.order_type == "blanket" and o.state != "draft"
         )
-        if not blanket_orders:
+        blanket_orders.with_context(from_inverse_commitment_date=True)
+
+        # Ensure we do not get back into the "_inverse_blanket_validity_start_date"
+        # since this would trigger "_compute_blanket_move_date_priority" and this
+        # would mess with the date priority
+        for blanket_order in blanket_orders:
+            blanket_order.with_context(from_inverse_commitment_date=True).write(
+                {"blanket_validity_start_date": blanket_order.commitment_date}
+            )
+
+    def _inverse_blanket_validity_start_date(self):
+        """
+        Update the commitment date to the new start date +
+        refresh related ongoing out moves date priority
+        """
+        blanket_orders = self.filtered(
+            lambda o: o.order_type == "blanket" and o.state != "draft"
+        )
+        if not blanket_orders or blanket_orders._context.get(
+            "from_inverse_commitment_date"
+        ):
             return
 
         for order in blanket_orders:
@@ -81,7 +104,7 @@ class SaleOrder(models.Model):
 
         out_moves = self.env["stock.move"].search(
             [
-                ("sale_line_id.order_id", "in", self.ids),
+                ("sale_line_id.order_id", "in", blanket_orders.ids),
                 ("state", "not in", ("done", "cancel")),
                 ("picking_type_id.code", "=", "outgoing"),
             ]
