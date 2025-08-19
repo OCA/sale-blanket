@@ -85,7 +85,7 @@
                     attrs="{'invisible': [('order_type', '!=', 'blanket')], 'readonly': [('is_blanket_eol_strategy_editable', '=', False)]}"
                 />
             </field>
-            <field name="commitment_date" position="after">
+            <field name="manual_delivery" position="after">
                 <field
                     name="create_call_off_from_so_if_possible"
                     widget="boolean_toggle"
