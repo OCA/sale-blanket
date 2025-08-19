@@ -13,6 +13,12 @@ class SaleOrder(models.Model):
         help="Date priority for the moves of the order.",
     )
 
+    commitment_date = fields.Datetime(inverse="_inverse_commitment_date")
+
+    blanket_validity_start_date = fields.Date(
+        inverse="_inverse_blanket_validity_start_date"
+    )
+
     def action_confirm(self):
         self.flush_recordset()
         self._compute_blanket_move_date_priority()
@@ -63,3 +69,45 @@ class SaleOrder(models.Model):
                 start_date
             ) + timedelta(seconds=order_position)
             count_per_date[start_date] = order_position + 1
+
+    def _inverse_commitment_date(self):
+        blanket_orders = self.filtered(
+            lambda o: o.order_type == "blanket" and o.state != "draft"
+        )
+        blanket_orders.with_context(from_inverse_commitment_date=True)
+
+        # Ensure we do not get back into the "_inverse_blanket_validity_start_date"
+        # since this would trigger "_compute_blanket_move_date_priority" and this
+        # would mess with the date priority
+        for blanket_order in blanket_orders:
+            blanket_order.with_context(from_inverse_commitment_date=True).write(
+                {"blanket_validity_start_date": blanket_order.commitment_date}
+            )
+
+    def _inverse_blanket_validity_start_date(self):
+        """
+        Update the commitment date to the new start date +
+        refresh related ongoing out moves date priority
+        """
+        blanket_orders = self.filtered(
+            lambda o: o.order_type == "blanket" and o.state != "draft"
+        )
+        if not blanket_orders or blanket_orders._context.get(
+            "from_inverse_commitment_date"
+        ):
+            return
+
+        for order in blanket_orders:
+            order.commitment_date = order.blanket_validity_start_date
+
+        blanket_orders._compute_blanket_move_date_priority()
+
+        out_moves = self.env["stock.move"].search(
+            [
+                ("sale_line_id.order_id", "in", blanket_orders.ids),
+                ("state", "not in", ("done", "cancel")),
+                ("picking_type_id.code", "=", "outgoing"),
+            ]
+        )
+        for move in out_moves:
+            move.date_priority = move.sale_line_id.order_id.blanket_move_date_priority
