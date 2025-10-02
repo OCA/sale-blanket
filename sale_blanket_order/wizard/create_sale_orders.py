@@ -232,3 +232,6 @@ class BlanketOrderWizardLine(models.TransientModel):
         "res.partner", related="blanket_line_id.partner_id", string="Vendor"
     )
     taxes_id = fields.Many2many("account.tax", related="blanket_line_id.taxes_id")
+    company_id = fields.Many2one(
+        "res.company", related="blanket_line_id.company_id", string="Company"
+    )
