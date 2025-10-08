@@ -83,7 +83,7 @@ class BlanketOrder(models.Model):
         string="Customer Reference",
         copy=False,
     )
-    note = fields.Text(default=_default_note)
+    note = fields.Text(default=lambda self: self._default_note())
     user_id = fields.Many2one(
         "res.users",
         string="Salesperson",
@@ -242,17 +242,18 @@ class BlanketOrder(models.Model):
             values["team_id"] = self.partner_id.user_id.sale_team_id.id
         self.update(values)
 
-    def unlink(self):
-        for order in self:
-            if order.state not in ("draft", "expired") or order._check_active_orders():
-                raise UserError(
-                    self.env._(
-                        "You can not delete an open blanket or "
-                        "with active sale orders! "
-                        "Try to cancel it before."
-                    )
+    @api.ondelete(at_uninstall=False)
+    def _unlink_if_allowed(self):
+        if self.filtered(
+            lambda r: r.state not in ("draft", "expired") or r._check_active_orders()
+        ):
+            raise UserError(
+                self.env._(
+                    "You can not delete an open blanket or "
+                    "with active sale orders! "
+                    "Try to cancel it before."
                 )
-        return super().unlink()
+            )
 
     def _validate(self):
         try:
@@ -284,10 +285,9 @@ class BlanketOrder(models.Model):
         return True
 
     def _check_active_orders(self):
-        for order in self.filtered("sale_count"):
-            for so in order._get_sale_orders():
-                if so.state not in ("cancel"):
-                    return True
+        for so in self._get_sale_orders():
+            if so.state not in ("cancel"):
+                return True
         return False
 
     def action_cancel(self):
@@ -304,23 +304,10 @@ class BlanketOrder(models.Model):
         return True
 
     def action_view_sale_orders(self):
-        sale_orders = self._get_sale_orders()
-        action = self.env["ir.actions.act_window"]._for_xml_id("sale.action_orders")
-        if len(sale_orders) > 0:
-            action["domain"] = [("id", "in", sale_orders.ids)]
-            action["context"] = [("id", "in", sale_orders.ids)]
-        else:
-            action = {"type": "ir.actions.act_window_close"}
-        return action
+        return self._get_sale_orders()._get_records_action()
 
     def action_view_sale_blanket_order_line(self):
-        action = self.env["ir.actions.act_window"]._for_xml_id(
-            "sale_blanket_order.act_open_sale_blanket_order_lines_view_tree"
-        )
-        lines = self.mapped("line_ids")
-        if len(lines) > 0:
-            action["domain"] = [("id", "in", lines.ids)]
-        return action
+        return self.mapped("line_ids")._get_records_action()
 
     @api.model
     def expire_orders(self):
@@ -333,48 +320,48 @@ class BlanketOrder(models.Model):
 
     @api.model
     def _search_original_uom_qty(self, operator, value):
-        bo_line_obj = self.env["sale.blanket.order.line"]
-        res = []
-        bo_lines = bo_line_obj.search([("original_uom_qty", operator, value)])
-        order_ids = bo_lines.mapped("order_id")
-        res.append(("id", "in", order_ids.ids))
-        return res
+        bo_lines = (
+            self.env["sale.blanket.order.line"]
+            .search_fetch([], ["original_uom_qty"])
+            .filtered_domain([("original_uom_qty", operator, value)])
+        )
+        return fields.Domain([("id", "in", bo_lines.mapped("order_id").ids)])
 
     @api.model
     def _search_ordered_uom_qty(self, operator, value):
-        bo_line_obj = self.env["sale.blanket.order.line"]
-        res = []
-        bo_lines = bo_line_obj.search([("ordered_uom_qty", operator, value)])
-        order_ids = bo_lines.mapped("order_id")
-        res.append(("id", "in", order_ids.ids))
-        return res
+        bo_lines = (
+            self.env["sale.blanket.order.line"]
+            .search_fetch([], ["ordered_uom_qty"])
+            .filtered_domain([("ordered_uom_qty", operator, value)])
+        )
+        return fields.Domain([("id", "in", bo_lines.mapped("order_id").ids)])
 
     @api.model
     def _search_invoiced_uom_qty(self, operator, value):
-        bo_line_obj = self.env["sale.blanket.order.line"]
-        res = []
-        bo_lines = bo_line_obj.search([("invoiced_uom_qty", operator, value)])
-        order_ids = bo_lines.mapped("order_id")
-        res.append(("id", "in", order_ids.ids))
-        return res
+        bo_lines = (
+            self.env["sale.blanket.order.line"]
+            .search_fetch([], ["invoiced_uom_qty"])
+            .filtered_domain([("invoiced_uom_qty", operator, value)])
+        )
+        return fields.Domain([("id", "in", bo_lines.mapped("order_id").ids)])
 
     @api.model
     def _search_delivered_uom_qty(self, operator, value):
-        bo_line_obj = self.env["sale.blanket.order.line"]
-        res = []
-        bo_lines = bo_line_obj.search([("delivered_uom_qty", operator, value)])
-        order_ids = bo_lines.mapped("order_id")
-        res.append(("id", "in", order_ids.ids))
-        return res
+        bo_lines = (
+            self.env["sale.blanket.order.line"]
+            .search_fetch([], ["delivered_uom_qty"])
+            .filtered_domain([("delivered_uom_qty", operator, value)])
+        )
+        return fields.Domain([("id", "in", bo_lines.mapped("order_id").ids)])
 
     @api.model
     def _search_remaining_uom_qty(self, operator, value):
-        bo_line_obj = self.env["sale.blanket.order.line"]
-        res = []
-        bo_lines = bo_line_obj.search([("remaining_uom_qty", operator, value)])
-        order_ids = bo_lines.mapped("order_id")
-        res.append(("id", "in", order_ids.ids))
-        return res
+        bo_lines = (
+            self.env["sale.blanket.order.line"]
+            .search_fetch([], ["remaining_uom_qty"])
+            .filtered_domain([("remaining_uom_qty", operator, value)])
+        )
+        return fields.Domain([("id", "in", bo_lines.mapped("order_id").ids)])
 
 
 class BlanketOrderLine(models.Model):
@@ -500,67 +487,6 @@ class BlanketOrderLine(models.Model):
         else:
             return super()._compute_display_name()
 
-    def _get_real_price_currency(self, product, rule_id, qty, uom, pricelist_id):
-        """Retrieve the price before applying the pricelist
-        :param obj product: object of current product record
-        :param float qty: total quentity of product
-        :param tuple price_and_rule: tuple(price, suitable_rule) coming
-               from pricelist computation
-        :param obj uom: unit of measure of current order line
-        :param integer pricelist_id: pricelist id of sale order"""
-        # Copied and adapted from the sale module
-        PricelistItem = self.env["product.pricelist.item"]
-        field_name = "lst_price"
-        currency_id = None
-        product_currency = None
-        if rule_id:
-            pricelist_item = PricelistItem.browse(rule_id)
-            if pricelist_item._show_discount():
-                while (
-                    pricelist_item.base == "pricelist"
-                    and pricelist_item.base_pricelist_id
-                    and pricelist_item._show_discount()
-                ):
-                    price, rule_id = pricelist_item.base_pricelist_id.with_context(
-                        uom=uom.id
-                    )._get_product_price_rule(product, qty, uom)
-                    pricelist_item = PricelistItem.browse(rule_id)
-
-            if pricelist_item.base == "standard_price":
-                field_name = "standard_price"
-            if pricelist_item.base == "pricelist" and pricelist_item.base_pricelist_id:
-                field_name = "price"
-                product = product.with_context(
-                    pricelist=pricelist_item.base_pricelist_id.id
-                )
-                product_currency = pricelist_item.base_pricelist_id.currency_id
-            currency_id = pricelist_item.pricelist_id.currency_id
-
-        product_currency = (
-            product_currency
-            or (product.company_id and product.company_id.currency_id)
-            or self.env.company.currency_id
-        )
-        if not currency_id:
-            currency_id = product_currency
-            cur_factor = 1.0
-        else:
-            if currency_id.id == product_currency.id:
-                cur_factor = 1.0
-            else:
-                cur_factor = currency_id._get_conversion_rate(
-                    product_currency, currency_id
-                )
-
-        product_uom = product.uom_id.id
-        if uom and uom.id != product_uom:
-            # the unit price is in a different uom
-            uom_factor = uom._compute_price(1.0, product.uom_id)
-        else:
-            uom_factor = 1.0
-
-        return product[field_name] * uom_factor * cur_factor, currency_id.id
-
     def _get_display_price(self):
         # Copied and adapted from the sale module
         self.ensure_one()
@@ -624,7 +550,7 @@ class BlanketOrderLine(models.Model):
         "sale_lines.order_id.state",
         "sale_lines.blanket_order_line",
         "sale_lines.product_uom_qty",
-        "sale_lines.product_uom",
+        "sale_lines.product_uom_id",
         "sale_lines.qty_delivered",
         "sale_lines.qty_invoiced",
         "original_uom_qty",
@@ -634,17 +560,19 @@ class BlanketOrderLine(models.Model):
         for line in self:
             sale_lines = line.sale_lines
             line.ordered_uom_qty = sum(
-                sl.product_uom._compute_quantity(sl.product_uom_qty, line.product_uom)
+                sl.product_uom_id._compute_quantity(
+                    sl.product_uom_qty, line.product_uom
+                )
                 for sl in sale_lines
                 if sl.order_id.state != "cancel" and sl.product_id == line.product_id
             )
             line.invoiced_uom_qty = sum(
-                sl.product_uom._compute_quantity(sl.qty_invoiced, line.product_uom)
+                sl.product_uom_id._compute_quantity(sl.qty_invoiced, line.product_uom)
                 for sl in sale_lines
                 if sl.order_id.state != "cancel" and sl.product_id == line.product_id
             )
             line.delivered_uom_qty = sum(
-                sl.product_uom._compute_quantity(sl.qty_delivered, line.product_uom)
+                sl.product_uom_id._compute_quantity(sl.qty_delivered, line.product_uom)
                 for sl in sale_lines
                 if sl.order_id.state != "cancel" and sl.product_id == line.product_id
             )
@@ -690,30 +618,26 @@ class BlanketOrderLine(models.Model):
 
         return super().create(vals_list)
 
-    _sql_constraints = [
-        (
-            "accountable_required_fields",
-            """
-            CHECK(
-                display_type IS NOT NULL OR (
-                    product_id IS NOT NULL AND product_uom IS NOT NULL
-                    )
-            )
-            """,
-            "Missing required fields on accountable sale order line.",
-        ),
-        (
-            "non_accountable_null_fields",
-            """
-            CHECK(
-                display_type IS NULL OR (
-                    product_id IS NULL AND price_unit = 0 AND product_uom IS NULL
-                    )
-            )
-            """,
-            "Forbidden values on non-accountable sale order line",
-        ),
-    ]
+    _accountable_required_fields = models.Constraint(
+        """
+        CHECK(
+            display_type IS NOT NULL OR (
+                product_id IS NOT NULL AND product_uom IS NOT NULL
+                )
+        )
+        """,
+        "Missing required fields on accountable sale order line.",
+    )
+    _non_accountable_null_fields = models.Constraint(
+        """
+        CHECK(
+            display_type IS NULL OR (
+                product_id IS NULL AND price_unit = 0 AND product_uom IS NULL
+                )
+        )
+        """,
+        "Forbidden values on non-accountable sale order line",
+    )
 
     def write(self, values):
         if "display_type" in values and self.filtered(

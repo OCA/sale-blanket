@@ -71,6 +71,7 @@
                             name="action_view_sale_orders"
                             type="object"
                             class="oe_stat_button"
+                            invisible="not sale_count"
                             icon="fa-list-alt"
                         >
                             <field

@@ -31,24 +31,27 @@ class SaleOrder(models.Model):
             if order._check_exchausted_blanket_order_line():
                 raise ValidationError(
                     self.env._(
-                        "Cannot confirm order %s as one of the lines refers "
-                        "to a blanket order that has no remaining quantity."
+                        "Cannot confirm order %(name)s as one of the lines refers "
+                        "to a blanket order that has no remaining quantity.",
+                        name=order.name,
                     )
-                    % order.name
                 )
+            order.check_partner_id()
+            order.order_line.check_product_id()
+            order.order_line.check_currency()
         return res
 
     @api.constrains("partner_id")
     def check_partner_id(self):
-        for line in self.order_line:
-            if line.blanket_order_line:
-                if line.blanket_order_line.partner_id != self.partner_id:
-                    raise ValidationError(
-                        self.env._(
-                            "The customer must be equal to the "
-                            "blanket order lines customer"
-                        )
-                    )
+        if self.order_line.filtered(
+            lambda r: r.blanket_order_line
+            and r.blanket_order_line.partner_id != self.partner_id
+        ):
+            raise ValidationError(
+                self.env._(
+                    "The customer must be equal to the blanket order lines customer"
+                )
+            )
 
     @api.depends("blanket_order_id")
     @api.depends_context("uid")
@@ -65,7 +68,12 @@ class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
     blanket_order_line = fields.Many2one(
-        "sale.blanket.order.line", string="Blanket Order line", copy=False
+        "sale.blanket.order.line",
+        string="Blanket Order line",
+        copy=False,
+        compute="_compute_blanket_order_line",
+        store=True,
+        precompute=True,
     )
 
     def _get_assigned_bo_line(self, bo_lines):
@@ -97,7 +105,7 @@ class SaleOrderLine(models.Model):
         return filters
 
     def _get_eligible_bo_lines(self):
-        base_qty = self.product_uom._compute_quantity(
+        base_qty = self.product_uom_id._compute_quantity(
             self.product_uom_qty, self.product_id.uom_id
         )
         filters = self._get_eligible_bo_lines_domain(base_qty)
@@ -114,85 +122,58 @@ class SaleOrderLine(models.Model):
                 self.blanket_order_line = self._get_assigned_bo_line(eligible_bo_lines)
         else:
             self.blanket_order_line = False
-        self.onchange_blanket_order_line()
-        return {"domain": {"blanket_order_line": [("id", "in", eligible_bo_lines.ids)]}}
 
-    @api.onchange("product_id", "order_partner_id")
-    def onchange_product_id(self):
-        # If product has changed remove the relation with blanket order line
-        if self.product_id:
-            return self.get_assigned_bo_line()
-        return
-
-    @api.onchange("product_uom", "product_uom_qty")
-    def product_uom_change(self):
-        if not self.product_uom or not self.product_id:
-            self.price_unit = 0.0
-            return
-        if self.order_id.pricelist_id and self.order_id.partner_id:
-            product = self.product_id.with_context(
-                lang=self.order_id.partner_id.lang,
-                partner=self.order_id.partner_id,
-                quantity=self.product_uom_qty,
-                date=self.order_id.date_order,
-                pricelist=self.order_id.pricelist_id.id,
-                uom=self.product_uom.id,
-                fiscal_position=self.env.context.get("fiscal_position"),
-            )
-            self.price_unit = product._get_tax_included_unit_price(
-                self.company_id or self.order_id.company_id,
-                self.order_id.currency_id,
-                self.order_id.date_order,
-                "sale",
-                fiscal_position=self.order_id.fiscal_position_id,
-                product_price_unit=self._get_display_price(),
-                product_currency=self.order_id.currency_id,
-            )
-        if self.product_id and not self.env.context.get("skip_blanket_find", False):
-            return self.get_assigned_bo_line()
-        return
-
-    @api.onchange("blanket_order_line")
-    def onchange_blanket_order_line(self):
-        bol = self.blanket_order_line
-        if bol:
-            self.product_id = bol.product_id
-            if bol.product_uom != self.product_uom:
-                price_unit = bol.product_uom._compute_price(
-                    bol.price_unit, self.product_uom
-                )
+    @api.depends("product_id", "order_partner_id", "currency_id")
+    def _compute_blanket_order_line(self):
+        for line in self:
+            if line.product_id:
+                line.get_assigned_bo_line()
             else:
-                price_unit = bol.price_unit
-            self.price_unit = price_unit
-            if bol.taxes_id:
-                self.tax_id = bol.taxes_id
-        else:
-            if not self.tax_id:
-                self._compute_tax_id()
-            self.with_context(skip_blanket_find=True).product_uom_change()
+                line.blanket_order_line = False
+
+    @api.depends("blanket_order_line")
+    def _compute_tax_ids(self):
+        so_line_linked_bol = self.filtered("blanket_order_line.taxes_id")
+        for line in so_line_linked_bol:
+            line.tax_ids = line.blanket_order_line.taxes_id
+        return super(SaleOrderLine, (self - so_line_linked_bol))._compute_price_unit()
+
+    @api.depends("blanket_order_line")
+    def _compute_price_unit(self):
+        so_line_linked_bol = self.filtered("blanket_order_line")
+        for line in so_line_linked_bol:
+            price_unit = 0
+            if line.blanket_order_line:
+                if line.blanket_order_line.product_uom != line.product_uom_id:
+                    price_unit = line.blanket_order_line.product_uom._compute_price(
+                        line.blanket_order_line.price_unit, line.product_uom_id
+                    )
+                else:
+                    price_unit = line.blanket_order_line.price_unit
+            line.price_unit = price_unit
+        return super(SaleOrderLine, (self - so_line_linked_bol))._compute_price_unit()
 
     @api.constrains("product_id")
     def check_product_id(self):
-        for line in self:
-            if (
-                line.blanket_order_line
-                and line.product_id != line.blanket_order_line.product_id
-            ):
-                raise ValidationError(
-                    self.env._(
-                        "The product in the blanket order and in the "
-                        "sales order must match"
-                    )
+        if self.filtered(
+            lambda r: r.blanket_order_line
+            and r.product_id != r.blanket_order_line.product_id
+        ):
+            raise ValidationError(
+                self.env._(
+                    "The product in the blanket order and in the sales order must match"
                 )
+            )
 
     @api.constrains("currency_id")
     def check_currency(self):
-        for line in self:
-            if line.blanket_order_line:
-                if line.currency_id != line.blanket_order_line.order_id.currency_id:
-                    raise ValidationError(
-                        self.env._(
-                            "The currency of the blanket order must match with "
-                            "that of the sale order."
-                        )
-                    )
+        if self.filtered(
+            lambda r: r.blanket_order_line
+            and r.currency_id != r.blanket_order_line.order_id.currency_id
+        ):
+            raise ValidationError(
+                self.env._(
+                    "The currency of the blanket order must match with "
+                    "that of the sale order."
+                )
+            )

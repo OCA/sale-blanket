@@ -21,13 +21,13 @@ Sale Blanket Orders
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-OCA%2Fsale--blanket-lightgray.png?logo=github
-    :target: https://github.com/OCA/sale-blanket/tree/18.0/sale_blanket_order
+    :target: https://github.com/OCA/sale-blanket/tree/19.0/sale_blanket_order
     :alt: OCA/sale-blanket
 .. |badge4| image:: https://img.shields.io/badge/weblate-Translate%20me-F47D42.png
-    :target: https://translation.odoo-community.org/projects/sale-blanket-18-0/sale-blanket-18-0-sale_blanket_order
+    :target: https://translation.odoo-community.org/projects/sale-blanket-19-0/sale-blanket-19-0-sale_blanket_order
     :alt: Translate me on Weblate
 .. |badge5| image:: https://img.shields.io/badge/runboat-Try%20me-875A7B.png
-    :target: https://runboat.odoo-community.org/builds?repo=OCA/sale-blanket&target_branch=18.0
+    :target: https://runboat.odoo-community.org/builds?repo=OCA/sale-blanket&target_branch=19.0
     :alt: Try me on Runboat
 
 |badge1| |badge2| |badge3| |badge4| |badge5|
@@ -51,14 +51,14 @@ Others modules provide similar features. The module
 also defines the concept of sale blanket order. The main differences
 are:
 
-- This module integrates Blanket Orders and Call-Off Orders into the
-  sale.blanket.order object, whereas the other module extends the
-  sale.order object. This means that any extensions made to the sale
-  order model can also apply to blanket orders.
+-  This module integrates Blanket Orders and Call-Off Orders into the
+   sale.blanket.order object, whereas the other module extends the
+   sale.order object. This means that any extensions made to the sale
+   order model can also apply to blanket orders.
 
-- In the other module, you can deliver and invoice directly from the
-  blanket order. You can also create a separate call-off order to
-  partially deliver the blanket order.
+-  In the other module, you can deliver and invoice directly from the
+   blanket order. You can also create a separate call-off order to
+   partially deliver the blanket order.
 
 Usage
 =====
@@ -74,21 +74,21 @@ section:
 Hitting the button create will open the form view in which we can
 introduce the following information:
 
-- Vendor
+-  Vendor
 
-- Salesperson
+-  Salesperson
 
-- Payment Terms
+-  Payment Terms
 
-- Validity date
+-  Validity date
 
-- Order lines:
+-  Order lines:
 
-  - Product
-  - Accorded price
-  - Original, Ordered, Invoiced, Received and Remaining quantities
+   -  Product
+   -  Accorded price
+   -  Original, Ordered, Invoiced, Received and Remaining quantities
 
-- Terms and Conditions of the Blanket Order
+-  Terms and Conditions of the Blanket Order
 
 |image2|
 
@@ -118,17 +118,17 @@ PO line is associated. Upon adding a new product in a newly created Sale
 Order a blanket order line will be suggested depending on the following
 factors:
 
-- Closer Validity date
-- Remaining quantity > Quantity introduced in the Sale Order line
+-  Closer Validity date
+-  Remaining quantity > Quantity introduced in the Sale Order line
 
 |image6|
 
-.. |image1| image:: https://raw.githubusercontent.com/OCA/sale-blanket/18.0/sale_blanket_order/static/description/BO_menu.png
-.. |image2| image:: https://raw.githubusercontent.com/OCA/sale-blanket/18.0/sale_blanket_order/static/description/BO_form.png
-.. |image3| image:: https://raw.githubusercontent.com/OCA/sale-blanket/18.0/sale_blanket_order/static/description/BO_actions.png
-.. |image4| image:: https://raw.githubusercontent.com/OCA/sale-blanket/18.0/sale_blanket_order/static/description/PO_from_BO.png
-.. |image5| image:: https://raw.githubusercontent.com/OCA/sale-blanket/18.0/sale_blanket_order/static/description/BO_lines.png
-.. |image6| image:: https://raw.githubusercontent.com/OCA/sale-blanket/18.0/sale_blanket_order/static/description/PO_BOLine.png
+.. |image1| image:: https://raw.githubusercontent.com/OCA/sale-blanket/19.0/sale_blanket_order/static/description/BO_menu.png
+.. |image2| image:: https://raw.githubusercontent.com/OCA/sale-blanket/19.0/sale_blanket_order/static/description/BO_form.png
+.. |image3| image:: https://raw.githubusercontent.com/OCA/sale-blanket/19.0/sale_blanket_order/static/description/BO_actions.png
+.. |image4| image:: https://raw.githubusercontent.com/OCA/sale-blanket/19.0/sale_blanket_order/static/description/PO_from_BO.png
+.. |image5| image:: https://raw.githubusercontent.com/OCA/sale-blanket/19.0/sale_blanket_order/static/description/BO_lines.png
+.. |image6| image:: https://raw.githubusercontent.com/OCA/sale-blanket/19.0/sale_blanket_order/static/description/PO_BOLine.png
 
 Bug Tracker
 ===========
@@ -136,7 +136,7 @@ Bug Tracker
 Bugs are tracked on `GitHub Issues <https://github.com/OCA/sale-blanket/issues>`_.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-`feedback <https://github.com/OCA/sale-blanket/issues/new?body=module:%20sale_blanket_order%0Aversion:%2018.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
+`feedback <https://github.com/OCA/sale-blanket/issues/new?body=module:%20sale_blanket_order%0Aversion:%2019.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
 
 Do not contact contributors directly about support or help with technical issues.
 
@@ -151,22 +151,22 @@ Authors
 Contributors
 ------------
 
-- André Pereira <github@andreparames.com> (https://www.acsone.eu/)
+-  André Pereira <github@andreparames.com> (https://www.acsone.eu/)
 
-- Adrià Gil Sorribes <adria.gil@eficent.com> (https://www.eficent.com/)
+-  Adrià Gil Sorribes <adria.gil@eficent.com> (https://www.eficent.com/)
 
-- Jordi Ballester Alomar <jordi.ballester@eficent.com>
+-  Jordi Ballester Alomar <jordi.ballester@eficent.com>
 
-- Alex Comba <alex.comba@agilebg.com> (https://www.agilebg.com/)
+-  Alex Comba <alex.comba@agilebg.com> (https://www.agilebg.com/)
 
-- Codeforward (https://www.codeforward.nl/):
+-  Codeforward (https://www.codeforward.nl/):
 
-     - Jasper Jumelet <jasper.jumelet@codeforward.nl>
-     - Chris Bergman <chris.bergman@codeforward.nl>
+      -  Jasper Jumelet <jasper.jumelet@codeforward.nl>
+      -  Chris Bergman <chris.bergman@codeforward.nl>
 
-- `Trobz <https://trobz.com>`__:
+-  `Trobz <https://trobz.com>`__:
 
-     - Nguyễn Minh Chiến <chien@trobz.com>
+      -  Nguyễn Minh Chiến <chien@trobz.com>
 
 Other credits
 -------------
@@ -187,6 +187,6 @@ OCA, or the Odoo Community Association, is a nonprofit organization whose
 mission is to support the collaborative development of Odoo features and
 promote its widespread use.
 
-This module is part of the `OCA/sale-blanket <https://github.com/OCA/sale-blanket/tree/18.0/sale_blanket_order>`_ project on GitHub.
+This module is part of the `OCA/sale-blanket <https://github.com/OCA/sale-blanket/tree/19.0/sale_blanket_order>`_ project on GitHub.
 
 You are welcome to contribute. To learn how please visit https://odoo-community.org/page/Contribute.

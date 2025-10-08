@@ -44,7 +44,10 @@ class BlanketOrderWizard(models.TransientModel):
         for line in bo_lines:
             if line.order_id.state != "open":
                 raise UserError(
-                    self.env._("Sale Blanket Order %s is not open") % line.order_id.name
+                    self.env._(
+                        "Sale Blanket Order %(name)s is not open",
+                        name=line.order_id.name,
+                    )
                 )
             line_company_id = line.company_id and line.company_id.id or False
             if company_id is not False and line_company_id != company_id:
@@ -95,7 +98,7 @@ class BlanketOrderWizard(models.TransientModel):
         "sale.blanket.order.wizard.line",
         "wizard_id",
         string="Lines",
-        default=_default_lines,
+        default=lambda self: self._default_lines(),
     )
 
     def _prepare_so_line_vals(self, line):
@@ -103,12 +106,12 @@ class BlanketOrderWizard(models.TransientModel):
             "analytic_distribution": line.analytic_distribution,
             "product_id": line.product_id.id,
             "name": line.product_id.name,
-            "product_uom": line.product_uom.id,
+            "product_uom_id": line.product_uom.id,
             "sequence": line.blanket_line_id.sequence,
             "price_unit": line.blanket_line_id.price_unit,
             "blanket_order_line": line.blanket_line_id.id,
             "product_uom_qty": line.qty,
-            "tax_id": [fields.Command.set(line.taxes_id.ids)],
+            "tax_ids": [fields.Command.set(line.taxes_id.ids)],
         }
 
     def _prepare_so_vals(
