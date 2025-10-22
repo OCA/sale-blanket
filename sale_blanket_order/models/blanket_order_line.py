@@ -3,7 +3,7 @@
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools import float_is_zero
+from odoo.tools import float_compare, float_is_zero
 from odoo.tools.misc import format_date
 
 
@@ -285,3 +285,44 @@ class BlanketOrderLine(models.Model):
                 )
             )
         return super().write(values)
+
+    def unlink(self):
+        precision = self.env["decimal.precision"].precision_get(
+            "Product Unit of Measure"
+        )
+        for blanket_line in self:
+            if not float_is_zero(
+                blanket_line.ordered_uom_qty, precision_digits=precision
+            ):
+                raise UserError(
+                    self.env._(
+                        "You can not delete a blanket line "
+                        "with quantity already ordered."
+                    )
+                )
+        return super().unlink()
+
+    @api.constrains("original_uom_qty")
+    def check_quantities_consistency(self):
+        # check you cannot decrease the quantity below
+        # the one already ordered
+        precision = self.env["decimal.precision"].precision_get(
+            "Product Unit of Measure"
+        )
+        for line in self:
+            if not any(sl.order_id.state != "cancel" for sl in line.sale_lines):
+                continue
+            if (
+                float_compare(
+                    line.ordered_uom_qty,
+                    line.original_uom_qty,
+                    precision_digits=precision,
+                )
+                == 1
+            ):
+                raise UserError(
+                    self.env._(
+                        "You cannot decrease the quantity below the "
+                        "quantity already ordered"
+                    )
+                )
