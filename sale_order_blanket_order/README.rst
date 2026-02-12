@@ -1,7 +1,3 @@
-.. image:: https://odoo-community.org/readme-banner-image
-   :target: https://odoo-community.org/get-involved?utm_source=readme
-   :alt: Odoo Community Association
-
 ========================
 Sale Order Blanket Order
 ========================
@@ -17,7 +13,7 @@ Sale Order Blanket Order
 .. |badge1| image:: https://img.shields.io/badge/maturity-Beta-yellow.png
     :target: https://odoo-community.org/page/development-status
     :alt: Beta
-.. |badge2| image:: https://img.shields.io/badge/license-AGPL--3-blue.png
+.. |badge2| image:: https://img.shields.io/badge/licence-AGPL--3-blue.png
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-OCA%2Fsale--blanket-lightgray.png?logo=github
@@ -160,7 +156,7 @@ This module introduces 2 new kinds of sales orders:
 
 Others modules can be used to provide the same kind of features. For
 example, the module
-(sale_blanket_order)[https://pypi.org/project/odoo-addon-sale-blanket-order]
+(sale_blanket_order)[`https://pypi.org/project/odoo-addon-sale-blanket-order] <https://pypi.org/project/odoo-addon-sale-blanket-order]>`__
 also defines the concept of sale blanket order. The main difference
 between the two modules is that the sale order blanket order module
 extends the sale order model to add the sale blanket order and the call
@@ -221,6 +217,17 @@ This module is maintained by the OCA.
 OCA, or the Odoo Community Association, is a nonprofit organization whose
 mission is to support the collaborative development of Odoo features and
 promote its widespread use.
+
+.. |maintainer-jbaudoux| image:: https://github.com/jbaudoux.png?size=40px
+    :target: https://github.com/jbaudoux
+    :alt: jbaudoux
+.. |maintainer-lmignon| image:: https://github.com/lmignon.png?size=40px
+    :target: https://github.com/lmignon
+    :alt: lmignon
+
+Current `maintainers <https://odoo-community.org/page/maintainer-role>`__:
+
+|maintainer-jbaudoux| |maintainer-lmignon| 
 
 This module is part of the `OCA/sale-blanket <https://github.com/OCA/sale-blanket/tree/16.0/sale_order_blanket_order>`_ project on GitHub.
 

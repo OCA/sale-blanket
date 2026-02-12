@@ -504,7 +504,7 @@ class SaleOrder(models.Model):
         matchings_dict = self.env["sale.order.line"]._match_lines_to_blanket(
             splitable_orders.order_line, blanket_order_candidates.order_line
         )
-        new_call_off_by_order = defaultdict(lambda: self.env["sale.order"])
+        new_call_off_by_blanket_order = defaultdict(lambda: self.env["sale.order"])
         # From here, we will create the call-off orders for the matched lines
         # For each line, we will look to the matching blanket lines
         # If the blanket line has enough remaining quantity for the line,
@@ -531,10 +531,10 @@ class SaleOrder(models.Model):
             for line in lines:
                 for blanket_line in blanket_lines:
                     blanket_order = blanket_line.order_id
-                    call_off = new_call_off_by_order[line.order_id]
+                    call_off = new_call_off_by_blanket_order[blanket_line.order_id]
                     if not call_off:
                         call_off = line.order_id._create_call_off_order(blanket_order)
-                        new_call_off_by_order[line.order_id] = call_off
+                        new_call_off_by_blanket_order[blanket_line.order_id] = call_off
                     qty_deliverable = blanket_line.call_off_remaining_qty
                     original_order = line.order_id
                     if (
@@ -571,7 +571,7 @@ class SaleOrder(models.Model):
         # values() is a generator of sets of values. We want to concatenate all the sets
         # into a single set of values.
         new_call_off_orders = self.env["sale.order"]
-        for call_off in new_call_off_by_order.values():
+        for call_off in new_call_off_by_blanket_order.values():
             new_call_off_orders |= call_off
         new_call_off_orders.action_confirm()
         return new_call_off_orders

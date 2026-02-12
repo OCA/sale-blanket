@@ -14,6 +14,34 @@ class TestSaleNormalOrder(SaleOrderBlanketOrderCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.blanket_so.action_confirm()
+        # create a second call off for a new product
+        cls.product_4 = cls.env["product.product"].create(
+            {
+                "name": "Product 4",
+                "type": "product",
+                "taxes_id": [Command.link(cls.tax_fixed.id)],
+            }
+        )
+        cls._set_qty_in_loc_only(cls.product_4, 3000)
+        cls.blanket_so_2 = cls.env["sale.order"].create(
+            {
+                "order_type": "blanket",
+                "partner_id": cls.partner.id,
+                "blanket_validity_start_date": "2025-01-01",
+                "blanket_validity_end_date": "2025-12-31",
+                "blanket_reservation_strategy": "at_call_off",
+                "order_line": [
+                    Command.create(
+                        {
+                            "product_id": cls.product_4.id,
+                            "product_uom_qty": 10.0,
+                            "price_unit": 100.0,
+                        }
+                    ),
+                ],
+            }
+        )
+        cls.blanket_so_2.action_confirm()
 
     @classmethod
     def _set_call_off_auto_create_mode(cls, value):
@@ -151,6 +179,75 @@ class TestSaleNormalOrder(SaleOrderBlanketOrderCase):
         blanquet_product_qty = sum(blanket_lines.mapped("product_uom_qty"))
         remaining_qty = sum(blanket_lines.mapped("call_off_remaining_qty"))
         self.assertEqual(blanquet_product_qty, remaining_qty + 1)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_multi_call_off_auto_create(self):
+        # A test where we've a SO with 3 products,
+        # one of which is part of a first blanket order
+        # one of which is part of a second blanket order
+        # and the last one is not part of any blanket order
+        # The quantity of the products that are part of the
+        # blanket orders is less than the quantity in the blanket
+        # orders
+        self._set_call_off_auto_create_mode(True)
+        order = self.env["sale.order"].create(
+            {
+                "partner_id": self.partner.id,
+                "order_line": [
+                    Command.create(
+                        {
+                            "product_id": self.product_1.id,
+                            "product_uom_qty": 1,
+                            "price_unit": 100,
+                        },
+                    ),
+                    Command.create(
+                        {
+                            "product_id": self.product_4.id,
+                            "product_uom_qty": 1,
+                            "price_unit": 100,
+                        },
+                    ),
+                    Command.create(
+                        {
+                            "product_id": self.product_3.id,
+                            "product_uom_qty": 1,
+                            "price_unit": 100,
+                        },
+                    ),
+                ],
+            }
+        )
+        with RecordCapturer(self.so_model, self.call_off_domain) as captured:
+            order.action_confirm()
+        new_orders = captured.records
+        self.assertEqual(len(new_orders), 2)
+        self.assertEqual(len(order.order_line), 1)
+        self.assertEqual(order.order_line.product_id, self.product_3)
+
+        for product in (self.product_1, self.product_4):
+            new_order = new_orders.filtered(
+                lambda o, p=product: o.order_line.product_id == p
+            )
+            self.assertTrue(
+                new_order, f"Call off order for product {product.name} not found"
+            )
+            self.assertRecordValues(
+                new_order.order_line,
+                [
+                    {
+                        "product_id": product.id,
+                        "product_uom_qty": 1.0,
+                        "price_unit": 0.0,
+                        "qty_to_deliver": 0.0,
+                        "qty_to_invoice": 0.0,
+                        "qty_delivered": 0.0,
+                        "price_tax": 0.0,
+                        "price_total": 0.0,
+                        "tax_id": [],
+                    }
+                ],
+            )
 
     @freezegun.freeze_time("2025-02-01")
     def test_call_off_auto_create_qty_multi_blanket_line(self):
