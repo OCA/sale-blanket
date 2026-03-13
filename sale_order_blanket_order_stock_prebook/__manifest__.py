@@ -4,7 +4,7 @@
 {
     "name": "Sale Blanket Order prebook stock",
     "summary": """Allow to prebook stock for blanket order""",
-    "version": "16.0.1.0.0",
+    "version": "18.0.1.0.0",
     "license": "AGPL-3",
     "author": "ACSONE SA/NV,BCIM,Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/sale-blanket",

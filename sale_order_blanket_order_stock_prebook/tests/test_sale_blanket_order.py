@@ -100,7 +100,7 @@ class TestSaleBlanketOrder(SaleOrderBlanketOrderCase):
                 }
             )
             order.action_confirm()
-        self.assertIn(order.state, ["sale", "done"])
+        self.assertEqual(order.state, "sale")
 
         # update the quantity of the blanket order
         so_line_product_2.product_uom_qty = 15.0
@@ -142,7 +142,7 @@ class TestSaleBlanketOrder(SaleOrderBlanketOrderCase):
             }
         )
         order.action_confirm()
-        self.assertIn(order.state, ["sale", "done"])
+        self.assertEqual(order.state, "sale")
 
         # at this stage we must still have a reservation for 15
         moves = self._get_current_moves(
@@ -154,8 +154,7 @@ class TestSaleBlanketOrder(SaleOrderBlanketOrderCase):
         # process the picking
         picking = order.order_line.blanket_move_ids.picking_id
         picking.action_assign()
-        for move_line in picking.move_line_ids:
-            move_line.qty_done = move_line.reserved_uom_qty
+        picking.move_line_ids.picked = True
         picking._action_done()
 
         # change reservation mode
