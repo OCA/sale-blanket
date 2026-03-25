@@ -2,12 +2,10 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import logging
 
-from odoo import SUPERUSER_ID, api
-
 _logger = logging.getLogger(__name__)
 
 
-def post_init_hook(cr, registry):
+def post_init_hook(env):
     """Create `account.payment.method` records
     for the installed payment providers.
     """
@@ -15,9 +13,8 @@ def post_init_hook(cr, registry):
         "Executing post init hook for module "
         "sale_order_blanket_order_stock_prebook_release"
     )
-    env = api.Environment(cr, SUPERUSER_ID, {})
     blanket_orders = env["sale.order"].search(
-        [("order_type", "=", "blanket"), ("state", "in", ["sale", "done"])]
+        [("order_type", "=", "blanket"), ("state", "=", "sale")]
     )
 
     _logger.info(
