@@ -4,7 +4,7 @@
 {
     "name": "Sale Order Blanket Order",
     "summary": """Manage blanket order and call of order""",
-    "version": "16.0.1.2.1",
+    "version": "16.0.1.2.2",
     "license": "AGPL-3",
     "author": "ACSONE SA/NV,BCIM,Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/sale-blanket",
