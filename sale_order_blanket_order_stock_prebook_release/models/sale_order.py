@@ -74,13 +74,13 @@ class SaleOrder(models.Model):
         blanket_orders = self.filtered(
             lambda o: o.order_type == "blanket" and o.state != "draft"
         )
-        blanket_orders.with_context(from_inverse_commitment_date=True)
+        blanket_orders = blanket_orders.with_context(from_inverse_commitment_date=True)
 
         # Ensure we do not get back into the "_inverse_blanket_validity_start_date"
         # since this would trigger "_compute_blanket_move_date_priority" and this
         # would mess with the date priority
         for blanket_order in blanket_orders:
-            blanket_order.with_context(from_inverse_commitment_date=True).write(
+            blanket_order.write(
                 {"blanket_validity_start_date": blanket_order.commitment_date}
             )
 
