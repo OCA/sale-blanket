@@ -43,25 +43,17 @@ class SaleOrder(models.Model):
         if not blankets:
             return
 
-        # we must use plain SQL to avoid the transformation of date and datetime
-        # fields to strings done by the read_group method which is designed to
-        # be use to display data in a view... :-(
-        query = """
-            SELECT
-                blanket_validity_start_date,
-                count(1)
-            FROM
-                sale_order
-            WHERE
-                order_type = 'blanket'
-                AND state in ('sale', 'done')
-                AND blanket_validity_start_date in %s
-            GROUP BY blanket_validity_start_date
-        """
-        self.env.cr.execute(
-            query, (tuple(blankets.mapped("blanket_validity_start_date")),)
+        start_dates = blankets.mapped("blanket_validity_start_date")
+        groups = self.env["sale.order"]._read_group(
+            domain=[
+                ("order_type", "=", "blanket"),
+                ("state", "=", "sale"),
+                ("blanket_validity_start_date", "in", start_dates),
+            ],
+            groupby=["blanket_validity_start_date:day"],
+            aggregates=["__count"],
         )
-        count_per_date = dict(self.env.cr.fetchall())
+        count_per_date = dict(groups)
         for order in blankets.sorted("create_date"):
             start_date = order.blanket_validity_start_date
             order_position = count_per_date.get(start_date, 0)
