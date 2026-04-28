@@ -20,7 +20,7 @@ def post_init_hook(env):
     _logger.info(
         f"Found {len(blanket_orders)} blanket orders to compute the move date priority"
     )
-    blanket_orders._compute_blanket_move_date_priority()
+    blanket_orders._set_blanket_move_date_priority()
 
     _logger.info("Setting the move date priority for the blanket orders move lines")
     for move_id in blanket_orders.order_line.move_ids:

@@ -21,10 +21,10 @@ class SaleOrder(models.Model):
 
     def action_confirm(self):
         self.flush_recordset()
-        self._compute_blanket_move_date_priority()
+        self._set_blanket_move_date_priority()
         return super().action_confirm()
 
-    def _compute_blanket_move_date_priority(self):
+    def _set_blanket_move_date_priority(self):
         """
         Compute the move date priority for the blanket orders.
 
@@ -77,7 +77,7 @@ class SaleOrder(models.Model):
         blanket_orders = blanket_orders.with_context(from_inverse_commitment_date=True)
 
         # Ensure we do not get back into the "_inverse_blanket_validity_start_date"
-        # since this would trigger "_compute_blanket_move_date_priority" and this
+        # since this would trigger "_set_blanket_move_date_priority" and this
         # would mess with the date priority
         for blanket_order in blanket_orders:
             blanket_order.write(
@@ -100,7 +100,7 @@ class SaleOrder(models.Model):
         for order in blanket_orders:
             order.commitment_date = order.blanket_validity_start_date
 
-        blanket_orders._compute_blanket_move_date_priority()
+        blanket_orders._set_blanket_move_date_priority()
 
         out_moves = self.env["stock.move"].search(
             [

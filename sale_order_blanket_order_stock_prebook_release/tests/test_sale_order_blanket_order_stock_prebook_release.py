@@ -215,11 +215,11 @@ class TestSaleOrderBlanketOrderStockPrebookRelease(
         with self.assertRaises(ValidationError):
             self.blanket_so.action_confirm()
 
-    def test_compute_blanket_move_date_priority_skips_without_start_date(self):
-        self.env["sale.order"]._compute_blanket_move_date_priority()
+    def test_set_blanket_move_date_priority_skips_without_start_date(self):
+        self.env["sale.order"]._set_blanket_move_date_priority()
 
         self.blanket_so.write({"blanket_validity_start_date": False})
-        self.blanket_so._compute_blanket_move_date_priority()
+        self.blanket_so._set_blanket_move_date_priority()
         self.assertFalse(self.blanket_so.blanket_move_date_priority)
 
     def test_inverse_commitment_date_updates_validity_start_date_when_confirmed(self):
@@ -237,7 +237,7 @@ class TestSaleOrderBlanketOrderStockPrebookRelease(
             new_date,
             "blanket_validity_start_date must be updated when commitment_date changes",
         )
-        # _compute_blanket_move_date_priority must NOT have been triggered again
+        # _set_blanket_move_date_priority must NOT have been triggered again
         # (the context from_inverse_commitment_date prevents it)
         self.assertEqual(
             self.blanket_so.blanket_move_date_priority,
