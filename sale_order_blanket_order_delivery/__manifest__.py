@@ -7,12 +7,9 @@
     ),
     "version": "18.0.1.0.0",
     "license": "AGPL-3",
-    "author": "Camptocamp, BCIM, Odoo Community Association (OCA)",
+    "author": "Camptocamp, Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/sale-blanket",
-    "depends": [
-        "sale_order_blanket_order_delivery",
-        "sale_order_carrier_auto_assign",
-    ],
+    "depends": ["sale_order_blanket_order", "sale_order_carrier_auto_assign"],
     "auto_install": True,
     "installable": True,
 }
