@@ -136,7 +136,7 @@ class SaleOrderLine(models.Model):
         so_line_linked_bol = self.filtered("blanket_order_line.taxes_id")
         for line in so_line_linked_bol:
             line.tax_ids = line.blanket_order_line.taxes_id
-        super(SaleOrderLine, (self - so_line_linked_bol))._compute_tax_ids()
+        return super(SaleOrderLine, (self - so_line_linked_bol))._compute_tax_ids()
 
     @api.depends("blanket_order_line")
     def _compute_price_unit(self):
