@@ -34,9 +34,10 @@ Sale Blanket Orders
 
 A blanket order is a pre-agreement to sell a certain number of
 quantities of products at a specific price. From a confirmed blanket
-order, the users can create new sale orders at such price, until the
-blanket order expires, either due to reaching the validity date or
-exhausting all the quantities of products.
+order, the users can create new sale orders at such price during the
+blanket order validity period, until the blanket order expires, either
+due to reaching the validity end date or exhausting all the quantities
+of products.
 
 **Table of contents**
 
@@ -80,7 +81,7 @@ introduce the following information:
 
 - Payment Terms
 
-- Validity date
+- Validity period
 
 - Order lines:
 
@@ -93,9 +94,9 @@ introduce the following information:
 |image2|
 
 From the form, once the Blanket Order has been confirmed and its state
-is open, the user can create a Sale Order, check the Sale Orders
-associated to the Blanket Order and/or see the Blanket Order lines
-associated to the BO.
+is open and the validity period has started, the user can create a Sale
+Order, check the Sale Orders associated to the Blanket Order and/or see
+the Blanket Order lines associated to the BO.
 
 |image3|
 
@@ -106,9 +107,10 @@ will be created.
 |image4|
 
 Installing this module will add an additional menu which will show all
-the blanket order lines currently defined in the system. From this list
-the user can create customized Sale Orders selecting the lines for which
-the PO (or POs if the customers are different) is (are) created.
+the blanket order lines currently defined in the system, including the
+customer for each line. From this list the user can create customized
+Sale Orders selecting the lines for which the PO (or POs if the
+customers are different) is (are) created.
 
 |image5|
 
@@ -118,7 +120,8 @@ PO line is associated. Upon adding a new product in a newly created Sale
 Order a blanket order line will be suggested depending on the following
 factors:
 
-- Closer Validity date
+- Started validity period
+- Closer scheduled date
 - Remaining quantity > Quantity introduced in the Sale Order line
 
 |image6|
@@ -167,6 +170,10 @@ Contributors
 - `Trobz <https://trobz.com>`__:
 
      - Nguyễn Minh Chiến <chien@trobz.com>
+
+- `Camptocamp <https://www.camptocamp.com>`__:
+
+     - Maksym Yankin <maksym.yankin@camptocamp.com>
 
 Other credits
 -------------
