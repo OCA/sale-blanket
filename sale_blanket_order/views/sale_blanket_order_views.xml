@@ -40,7 +40,7 @@
                     />
                     <button
                         name="set_to_draft"
-                        invisible="state not in ['expired', 'done']"
+                        invisible="state == 'draft'"
                         string="To Draft"
                         class="btn-secondary"
                         type="object"
