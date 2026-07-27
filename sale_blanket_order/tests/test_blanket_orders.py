@@ -196,6 +196,35 @@ class TestSaleBlanketOrders(SaleCommon):
 
         blanket_order.action_confirm()
 
+    def test_blanket_order_line_uses_fixed_pricelist_price(self):
+        self.product1.list_price = 915.0
+        fixed_price = 740.0
+        pricelist = self._create_pricelist(currency_id=self.env.ref("base.USD").id)
+        self.product_pricelist_item_obj.create(
+            {
+                "pricelist_id": pricelist.id,
+                "applied_on": "0_product_variant",
+                "product_id": self.product1.id,
+                "compute_price": "fixed",
+                "fixed_price": fixed_price,
+            }
+        )
+
+        with Form(self.blanket_order_obj) as bo:
+            bo.partner_id = self.partner
+            bo.validity_start_date = self.yesterday
+            bo.validity_date = self.tomorrow
+            bo.payment_term_id = self.payment_term
+            bo.pricelist_id = pricelist
+            with bo.line_ids.new() as line:
+                line.product_id = self.product1
+                line.product_uom = self.product1.uom_id
+                line.original_uom_qty = 1.0
+
+        blanket_order = bo.save()
+        self.assertEqual(blanket_order.line_ids.price_unit, fixed_price)
+        self.assertEqual(blanket_order.line_ids.taxes_id, self.tax1)
+
     def test_02_create_sale_orders_from_blanket_order(self):
         """We create a blanket order and create two sale orders"""
         with Form(self.blanket_order_obj) as bo:
