@@ -47,7 +47,7 @@ class BlanketOrderWizard(models.TransientModel):
     @api.model
     def _check_valid_blanket_order_line(self, bo_lines):
         precision = self.env["decimal.precision"].precision_get(
-            "Product Unit of Measure"
+            "Product Unit"
         )
         company_id = False
 
@@ -246,8 +246,8 @@ class BlanketOrderWizardLine(models.TransientModel):
     )
     date_schedule = fields.Date(string="Scheduled Date")
     remaining_uom_qty = fields.Float(related="blanket_line_id.remaining_uom_qty")
-    qty = fields.Float(string="Quantity to Order", required=True)
-    price_unit = fields.Float(related="blanket_line_id.price_unit")
+    qty = fields.Float(string="Quantity to Order", required=True, digits="Product Unit")
+    price_unit = fields.Float(related="blanket_line_id.price_unit", min_display_digits="Product Price")
     currency_id = fields.Many2one("res.currency", related="blanket_line_id.currency_id")
     partner_id = fields.Many2one(
         "res.partner", related="blanket_line_id.partner_id", string="Vendor"

@@ -136,30 +136,35 @@ class BlanketOrder(models.Model):
         compute="_compute_uom_qty",
         search="_search_original_uom_qty",
         default=0.0,
+        digits="Product Unit"
     )
     ordered_uom_qty = fields.Float(
         string="Ordered quantity",
         compute="_compute_uom_qty",
         search="_search_ordered_uom_qty",
         default=0.0,
+        digits="Product Unit"
     )
     invoiced_uom_qty = fields.Float(
         string="Invoiced quantity",
         compute="_compute_uom_qty",
         search="_search_invoiced_uom_qty",
         default=0.0,
+        digits="Product Unit"
     )
     remaining_uom_qty = fields.Float(
         string="Remaining quantity",
         compute="_compute_uom_qty",
         search="_search_remaining_uom_qty",
         default=0.0,
+        digits="Product Unit"
     )
     delivered_uom_qty = fields.Float(
         string="Delivered quantity",
         compute="_compute_uom_qty",
         search="_search_delivered_uom_qty",
         default=0.0,
+        digits="Product Unit"
     )
 
     _check_validity_dates = models.Constraint(
@@ -192,7 +197,7 @@ class BlanketOrder(models.Model):
     def _compute_state(self):
         today = fields.Date.today()
         precision = self.env["decimal.precision"].precision_get(
-            "Product Unit of Measure"
+            "Product Unit"
         )
         for order in self:
             if not order.confirmed:
@@ -419,7 +424,7 @@ class BlanketOrderLine(models.Model):
         domain=[("sale_ok", "=", True)],
     )
     product_uom = fields.Many2one("uom.uom", string="Unit of Measure")
-    price_unit = fields.Float(string="Price", digits="Product Price")
+    price_unit = fields.Float(string="Price", min_display_digits="Product Price")
     taxes_id = fields.Many2many(
         comodel_name="account.tax",
         context={"active_test": False},
@@ -427,16 +432,16 @@ class BlanketOrderLine(models.Model):
     )
     date_schedule = fields.Date(string="Scheduled Date")
     original_uom_qty = fields.Float(
-        string="Original quantity", default=1, digits="Product Unit of Measure"
+        string="Original quantity", default=1, digits="Product Unit"
     )
     ordered_uom_qty = fields.Float(
-        string="Ordered quantity", compute="_compute_quantities", store=True
+        string="Ordered quantity", compute="_compute_quantities", store=True, digits="Product Unit"
     )
     invoiced_uom_qty = fields.Float(
-        string="Invoiced quantity", compute="_compute_quantities", store=True
+        string="Invoiced quantity", compute="_compute_quantities", store=True, digits="Product Unit"
     )
     remaining_uom_qty = fields.Float(
-        string="Remaining quantity", compute="_compute_quantities", store=True
+        string="Remaining quantity", compute="_compute_quantities", store=True, digits="Product Unit"
     )
     remaining_qty = fields.Float(
         string="Remaining quantity in base UoM",
@@ -444,7 +449,7 @@ class BlanketOrderLine(models.Model):
         store=True,
     )
     delivered_uom_qty = fields.Float(
-        string="Delivered quantity", compute="_compute_quantities", store=True
+        string="Delivered quantity", compute="_compute_quantities", store=True, digits="Product Unit"
     )
     sale_lines = fields.One2many(
         "sale.order.line",
@@ -538,7 +543,7 @@ class BlanketOrderLine(models.Model):
     @api.onchange("product_id", "original_uom_qty")
     def onchange_product(self):
         precision = self.env["decimal.precision"].precision_get(
-            "Product Unit of Measure"
+            "Product Unit"
         )
         if self.product_id:
             name = self.product_id.name
