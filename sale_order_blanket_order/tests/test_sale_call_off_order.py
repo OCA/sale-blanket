@@ -652,6 +652,56 @@ class TestSaleCallOffOrderProcessing(SaleOrderBlanketOrderCase):
         self.assertEqual(moves_2.move_line_ids, move_line_2)
 
     @freezegun.freeze_time("2025-02-01")
+    def test_call_off_orders_with_same_commitment_date_are_consolidated(self):
+        # Call-off orders sharing the same requested delivery date are
+        # consolidated into a single delivery, to avoid needlessly
+        # multiplying the number of deliveries (and so the logistic cost)
+        # for a blanket order.
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_2.action_confirm()
+
+        picking_1 = order_1.order_line.blanket_move_ids.picking_id
+        picking_2 = order_2.order_line.blanket_move_ids.picking_id
+
+        self.assertTrue(picking_1)
+        self.assertEqual(picking_1, picking_2)
+        # The delivered/invoiced quantities accounting and the native
+        # traceability stay on the blanket order: the reference (and so the
+        # picking) is linked to it through the standard "sale_id" field.
+        self.assertEqual(picking_1.sale_id, self.blanket_so)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_orders_with_different_commitment_date_are_not_consolidated(
+        self,
+    ):
+        # Call-off orders requested for different delivery dates must not be
+        # merged into the same delivery.
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-17 10:00:00"
+        )
+        order_2.action_confirm()
+
+        picking_1 = order_1.order_line.blanket_move_ids.picking_id
+        picking_2 = order_2.order_line.blanket_move_ids.picking_id
+
+        self.assertTrue(picking_1)
+        self.assertTrue(picking_2)
+        self.assertNotEqual(picking_1, picking_2)
+        self.assertNotEqual(picking_1.reference_ids, picking_2.reference_ids)
+        self.assertEqual(picking_1.sale_id, self.blanket_so)
+        self.assertEqual(picking_2.sale_id, self.blanket_so)
+
+    @freezegun.freeze_time("2025-02-01")
     def test_cancel_call_off_order_delivered(self):
         order = self._create_call_off_order(5.0, commitment_date="2025-02-10 10:00:00")
         order.action_confirm()
