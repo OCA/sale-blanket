@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright 2026 ACSONE SA/NV
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+
+    <record model="ir.ui.view" id="sale_order_form_view">
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale_order_blanket_order.sale_order_form_view" />
+        <field name="arch" type="xml">
+            <field name="blanket_strict_packaging" position="after">
+                <field
+                    name="blanket_strict_delivery_method"
+                    attrs="{'invisible': [('order_type', '!=', 'blanket')]}"
+                />
+            </field>
+        </field>
+    </record>
+
+</odoo>
