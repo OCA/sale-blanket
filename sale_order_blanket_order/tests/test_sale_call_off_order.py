@@ -495,6 +495,55 @@ class TestSaleCallOffOrderProcessing(SaleOrderBlanketOrderCase):
         self.assertFalse(group.exists())
 
     @freezegun.freeze_time("2025-02-01")
+    def test_cancel_call_off_order_multi_steps_merged_moves(self):
+        warehouse = self.env["stock.warehouse"].search(
+            [("company_id", "=", self.env.company.id)], limit=1
+        )
+        warehouse.delivery_steps = "pick_ship"
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            3.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_2.action_confirm()
+        ship_moves_1 = order_1.order_line.blanket_move_ids
+        ship_moves_2 = order_2.order_line.blanket_move_ids
+        # The pick moves of the call-off orders are merged into a single
+        # operation
+        pick_move = ship_moves_1.move_orig_ids
+        self.assertEqual(len(pick_move), 1)
+        self.assertEqual(pick_move, ship_moves_2.move_orig_ids)
+        self.assertEqual(pick_move.product_uom_qty, 8.0)
+        pick_move._action_assign()
+        self.assertEqual(pick_move.reserved_availability, 8.0)
+        move_line = pick_move.move_line_ids
+        self.assertEqual(len(move_line), 1)
+
+        order_1._action_cancel()
+
+        # The qty of the pick move feeding the canceled call-off order is
+        # removed from the merged pick move
+        self.assertEqual(set(ship_moves_1.mapped("state")), {"cancel"})
+        self.assertNotIn("cancel", ship_moves_2.mapped("state"))
+        self.assertEqual(pick_move.state, "assigned")
+        self.assertEqual(pick_move.product_uom_qty, 3.0)
+        self.assertEqual(pick_move.reserved_availability, 3.0)
+        # The existing reservation is decreased, not done again
+        self.assertEqual(pick_move.move_line_ids, move_line)
+        self.assertEqual(move_line.reserved_uom_qty, 3.0)
+        quants = self.env["stock.quant"].search(
+            [
+                ("product_id", "=", self.product_1.id),
+                ("location_id", "=", move_line.location_id.id),
+            ]
+        )
+        self.assertEqual(sum(quants.mapped("reserved_quantity")), 3.0)
+        self.assertEqual(pick_move.move_dest_ids, ship_moves_2)
+        self.assertEqual(len(pick_move.picking_id.move_ids), 1)
+
+    @freezegun.freeze_time("2025-02-01")
     def test_cancel_call_off_order_delivered(self):
         order = self._create_call_off_order(5.0, commitment_date="2025-02-10 10:00:00")
         order.action_confirm()

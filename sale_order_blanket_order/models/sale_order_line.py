@@ -822,22 +822,28 @@ class SaleOrderLine(models.Model):
                     )
                 )
 
-    def _get_call_off_blanket_moves(self):
+    def _prepare_call_off_blanket_moves_to_cancel(self):
         """Return blanket order moves related to the call-off.
 
         This includes the moves linked to the call-off lines and unprocessed
-        upstream moves that only feed them.
+        upstream moves feeding them. Shared upstream moves are split when needed
+        so that only the quantity related to the call-off is canceled.
         """
         moves = self.blanket_move_ids.filtered(lambda move: move.state != "cancel")
         upstream_moves = moves.move_orig_ids
         while upstream_moves:
-            upstream_moves = upstream_moves.filtered(
-                lambda move, moves=moves: move.state not in ("done", "cancel")
-                and move not in moves
-                and not move.move_dest_ids - moves
-            )
-            moves |= upstream_moves
-            upstream_moves = upstream_moves.move_orig_ids
+            moves_to_cancel = self.env["stock.move"]
+            for move in upstream_moves:
+                if move.state in ("done", "cancel") or move in moves:
+                    continue
+                dest_moves = move.move_dest_ids & moves
+                if not dest_moves:
+                    continue
+                if move.move_dest_ids - moves:
+                    move = move._split_for_dest_moves(dest_moves)
+                moves_to_cancel |= move
+            moves |= moves_to_cancel
+            upstream_moves = moves_to_cancel.move_orig_ids
         return moves
 
     def _check_call_off_blanket_moves_to_cancel(self):
@@ -863,7 +869,7 @@ class SaleOrderLine(models.Model):
         """
         call_off_lines = self.filtered(lambda line: line.order_type == "call_off")
         call_off_lines._check_call_off_blanket_moves_to_cancel()
-        moves = call_off_lines._get_call_off_blanket_moves()
+        moves = call_off_lines._prepare_call_off_blanket_moves_to_cancel()
         groups = moves.group_id
         moves._action_cancel()
         call_off_lines._unlink_call_off_procurement_groups(groups)
