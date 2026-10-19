@@ -33,7 +33,6 @@
                 </span>
             </xpath>
             <field name="partner_shipping_id" position="after">
-                <field name="blanket_order_id_domain" invisible="1" />
                 <field
                     name="blanket_order_id"
                     domain="blanket_order_id_domain"
@@ -78,13 +77,11 @@
                         /></span>
                     </div>
                 </div>
-                <field name="is_blanket_reservation_strategy_editable" invisible="1" />
                 <field
                     name="blanket_reservation_strategy"
                     invisible="order_type != 'blanket'"
                     readonly="not is_blanket_reservation_strategy_editable"
                 />
-                <field name="is_blanket_eol_strategy_editable" invisible="1" />
                 <field
                     name="blanket_eol_strategy"
                     invisible="order_type != 'blanket'"
@@ -107,7 +104,6 @@
                 expr="//page[@name='order_lines']//form//div[@name='ordered_qty']"
                 position="after"
             >
-                <field name="order_type" invisible="1" />
                 <field
                     name="call_off_remaining_qty"
                     readonly="1"
@@ -137,7 +133,6 @@
                 expr="//page[@name='order_lines']//list//field[@name='product_uom_qty']"
                 position="after"
             >
-                <field name="order_type" invisible="1" />
                 <field
                     name="call_off_remaining_qty"
                     string="To Call-off"
@@ -148,7 +143,6 @@
             </xpath>
 
             <xpath expr="//header/*[1]" position="before">
-                <field name="show_deliver_remaining" invisible="1" />
                 <button
                     name="action_deliver_remaining"
                     string="Deliver remaining"
@@ -237,6 +231,7 @@
     <record id="action_blankets" model="ir.actions.act_window">
         <field name="name">Blanket Orders</field>
         <field name="type">ir.actions.act_window</field>
+        <field name="path">blanket-orders</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,kanban,form,calendar,pivot,graph,activity</field>
         <field name="search_view_id" ref="sale.view_sales_order_filter" />
@@ -305,6 +300,7 @@
     <record id="action_calloffs" model="ir.actions.act_window">
         <field name="name">Call-off Orders</field>
         <field name="type">ir.actions.act_window</field>
+        <field name="path">call-off-orders</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,kanban,form,calendar,pivot,graph,activity</field>
         <field name="search_view_id" ref="sale.view_sales_order_filter" />
@@ -374,7 +370,7 @@
         <field name="parent_id" ref="sale.sale_order_menu" />
         <field name="action" ref="action_blankets" />
         <field name="sequence" eval="22" />
-        <field name="groups_id" eval="[(4, ref('sales_team.group_sale_salesman'))]" />
+        <field name="group_ids" eval="[(4, ref('sales_team.group_sale_salesman'))]" />
     </record>
 
     <record model="ir.ui.menu" id="calloff_order_menu">
@@ -382,6 +378,6 @@
         <field name="parent_id" ref="sale.sale_order_menu" />
         <field name="action" ref="action_calloffs" />
         <field name="sequence" eval="24" />
-        <field name="groups_id" eval="[(4, ref('sales_team.group_sale_salesman'))]" />
+        <field name="group_ids" eval="[(4, ref('sales_team.group_sale_salesman'))]" />
     </record>
 </odoo>

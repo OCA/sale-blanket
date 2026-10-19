@@ -1,7 +1,7 @@
 # Copyright 2025 ACSONE SA/NV
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -24,10 +24,10 @@ class SaleOrderDelierRemainingWizardLine(models.TransientModel):
         related="sale_order_line_id.product_id",
         readonly=True,
     )
-    product_packaging_id = fields.Many2one(
-        "product.packaging",
-        string="Packaging",
-        related="sale_order_line_id.product_packaging_id",
+    product_uom_id = fields.Many2one(
+        "uom.uom",
+        string="Unit",
+        related="sale_order_line_id.product_uom_id",
         readonly=True,
     )
     call_off_remaining_qty = fields.Float(
@@ -42,13 +42,15 @@ class SaleOrderDelierRemainingWizardLine(models.TransientModel):
         for line in self:
             if line.qty_to_deliver > line.call_off_remaining_qty:
                 raise UserError(
-                    _(
+                    self.env._(
                         "The 'Quantity to Deliver' cannot be greater than the "
                         "'Remaining Quantity'."
                     )
                 )
             if line.qty_to_deliver < 0:
-                raise UserError(_("The 'Quantity to Deliver' cannot be negative."))
+                raise UserError(
+                    self.env._("The 'Quantity to Deliver' cannot be negative.")
+                )
 
 
 class SaleOrderDelierRemainingWizard(models.TransientModel):
@@ -72,15 +74,17 @@ class SaleOrderDelierRemainingWizard(models.TransientModel):
                 line_vals = {
                     "product_id": wizard_line.product_id.id,
                     "product_uom_qty": wizard_line.qty_to_deliver,
-                    "product_uom": wizard_line.sale_order_line_id.product_uom.id,
+                    "product_uom_id": wizard_line.sale_order_line_id.product_uom_id.id,
                     "name": wizard_line.sale_order_line_id.name,
                     "price_unit": 0.0,
-                    "tax_id": [(6, 0, wizard_line.sale_order_line_id.tax_id.ids)],
+                    "tax_ids": [(6, 0, wizard_line.sale_order_line_id.tax_ids.ids)],
                     "order_id": self.order_id.id,
                 }
                 call_off_lines.append((0, 0, line_vals))
         if not call_off_lines:
-            raise UserError(_("A call off order should have at least one product."))
+            raise UserError(
+                self.env._("A call off order should have at least one product.")
+            )
 
         call_off_order = self.env["sale.order"].create(
             {

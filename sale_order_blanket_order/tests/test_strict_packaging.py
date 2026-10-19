@@ -15,7 +15,9 @@ class TestStrictPackaging(SaleOrderBlanketOrderCase):
         cls.blanket_line_product_2 = cls.blanket_so.order_line.filtered(
             lambda line: line.product_id == cls.product_2
         )
-        cls.blanket_line_product_2.product_packaging_id = cls.product_2_pack2
+        cls.blanket_line_product_2.write(
+            {"product_uom_id": cls.product_2_pack2.id, "product_uom_qty": 5}
+        )
         cls.blanket_line_product_2.flush_recordset()
         cls.blanket_so.blanket_strict_packaging = True
         cls.blanket_so.action_confirm()
@@ -38,7 +40,7 @@ class TestStrictPackaging(SaleOrderBlanketOrderCase):
                         Command.create(
                             {
                                 "product_id": self.product_2.id,
-                                "product_uom_qty": 3,
+                                "product_uom_qty": 4,
                             }
                         )
                     ],
@@ -55,16 +57,15 @@ class TestStrictPackaging(SaleOrderBlanketOrderCase):
                     Command.create(
                         {
                             "product_id": self.product_2.id,
-                            "product_uom_qty": 4,
+                            "product_uom_qty": 2,
+                            "product_uom_id": self.product_2_pack2.id,
                         }
                     )
                 ],
             }
         )
         call_off_so.action_confirm()
-        self.assertEqual(
-            call_off_so.order_line.product_packaging_id, self.product_2_pack2
-        )
+        self.assertEqual(call_off_so.order_line.product_uom_id, self.product_2_pack2)
 
     @freezegun.freeze_time("2025-02-01")
     def test_call_off_wrong_packaging(self):
@@ -80,8 +81,8 @@ class TestStrictPackaging(SaleOrderBlanketOrderCase):
                         Command.create(
                             {
                                 "product_id": self.product_2.id,
-                                "product_uom_qty": 2,
-                                "product_packaging_id": self.product_2_pack3.id,
+                                "product_uom_qty": 1,
+                                "product_uom_id": self.product_2_pack3.id,
                             }
                         )
                     ],

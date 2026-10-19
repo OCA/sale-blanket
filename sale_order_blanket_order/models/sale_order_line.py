@@ -1,10 +1,10 @@
 # Copyright 2024 ACSONE SA/NV
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+import functools
 from collections import defaultdict
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.exceptions import ValidationError
-from odoo.osv.expression import expression
 from odoo.tools import SQL, float_compare, float_is_zero
 
 
@@ -34,11 +34,10 @@ def _patch_method(model_obj, name, method):
     """
     cls = type(model_obj)
     origin = getattr(cls, name)
+    # copy the decorator attributes (_depends, _api_*, ...) from origin
+    functools.update_wrapper(method, origin)
     method.origin = origin
-    # propagate decorators from origin to method, and apply api decorator
-    wrapped = api.propagate(origin, method)
-    wrapped.origin = origin
-    setattr(cls, name, wrapped)
+    setattr(cls, name, method)
 
 
 class SaleOrderLine(models.Model):
@@ -109,7 +108,7 @@ class SaleOrderLine(models.Model):
     )
 
     def init(self):
-        self._cr.execute(
+        self.env.cr.execute(
             """
             CREATE INDEX IF NOT EXISTS
                 ale_order_line_blanket_validity_range_index
@@ -169,7 +168,7 @@ class SaleOrderLine(models.Model):
                 line.price_unit, precision_digits=price_precision
             ):
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The price of a call-off order line must be 0.0. "
                         "(Order: '%(order)s', Product: '%(product)s')",
                         order=line.order_id.name,
@@ -181,7 +180,7 @@ class SaleOrderLine(models.Model):
         "blanket_validity_start_date",
         "blanket_validity_end_date",
         "product_id",
-        "product_packaging_id",
+        "product_uom_id",
         "order_partner_id",
         "state",
         "blanket_strict_packaging",
@@ -207,7 +206,7 @@ class SaleOrderLine(models.Model):
                 "order_id",
                 "order_type",
                 "product_id",
-                "product_packaging_id",
+                "product_uom_id",
                 "order_partner_id",
                 "state",
                 "blanket_strict_packaging",
@@ -224,7 +223,7 @@ class SaleOrderLine(models.Model):
                 continue
             if rec.blanket_validity_end_date < rec.blanket_validity_start_date:
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The validity end date must be greater than the validity start "
                         "date."
                     )
@@ -247,7 +246,7 @@ class SaleOrderLine(models.Model):
                     value = value.id
                 domain.append((matching_field, "=", value))
 
-            query = expression(domain, self).query
+            query = self.sudo()._search(domain)
 
             # here we use a plain SQL query to benefit of the daterange
             # function available in PostgresSQL
@@ -281,7 +280,7 @@ class SaleOrderLine(models.Model):
                 if sol.product_id.allow_blanket_order_overlap:
                     continue
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The product '%(product_name)s' is already part of another "
                         "blanket order %(order_name)s.",
                         product_name=sol.product_id.name,
@@ -320,7 +319,7 @@ class SaleOrderLine(models.Model):
             if float_compare(
                 new_call_off_remaining_qty,
                 line.call_off_remaining_qty,
-                precision_rounding=line.product_uom.rounding or 1.0,
+                precision_rounding=line.product_uom_id.rounding or 1.0,
             ):
                 line.call_off_remaining_qty = new_call_off_remaining_qty
 
@@ -336,7 +335,7 @@ class SaleOrderLine(models.Model):
             if not blanket_lines:
                 line = call_of_lines[0]
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The product is not part of linked blanket order. "
                         "(Product: '%(product)s', Order: '%(order)s', "
                         "Blanket Order: '%(blanket_order)s')",
@@ -354,12 +353,12 @@ class SaleOrderLine(models.Model):
                 float_compare(
                     qty_to_procure,
                     qty_remaining_to_procure,
-                    precision_rounding=call_of_lines[0].product_uom.rounding,
+                    precision_rounding=call_of_lines[0].product_uom_id.rounding,
                 )
                 > 0
             ):
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The quantity to procure is greater than the quantity "
                         "remaining to deliver in the linked blanket order for "
                         "this product. (Product: '%(product)s', Order: "
@@ -382,7 +381,7 @@ class SaleOrderLine(models.Model):
         periods.
         """
         if strict_packaging:
-            return ["product_id", "product_packaging_id", "order_partner_id"]
+            return ["product_id", "product_uom_id", "order_partner_id"]
         return ["product_id", "order_partner_id"]
 
     def _get_blanket_lines_for_call_off_lines_dict(self, validate=True):
@@ -454,7 +453,7 @@ class SaleOrderLine(models.Model):
                 float_compare(
                     line.call_off_remaining_qty,
                     0.0,
-                    precision_rounding=line.product_uom.rounding,
+                    precision_rounding=line.product_uom_id.rounding,
                 )
                 <= 0
             ):
@@ -482,13 +481,13 @@ class SaleOrderLine(models.Model):
             result[key][0] |= line
         return result
 
-    def _prepare_reserve_procurement_values(self, group_id=None):
+    def _prepare_reserve_procurement_values(self, reference):
         if self.order_type == "blanket":
-            return self._prepare_reserve_procurement_values_blanket(group_id)
+            return self._prepare_reserve_procurement_values_blanket(reference)
         else:
-            return super()._prepare_reserve_procurement_values(group_id)
+            return super()._prepare_reserve_procurement_values(reference)
 
-    def _prepare_reserve_procurement_values_blanket(self, group_id=None):
+    def _prepare_reserve_procurement_values_blanket(self, reference):
         """Prepare the values for the procurement to reserve the stock for a
         blanket order line.
 
@@ -497,7 +496,7 @@ class SaleOrderLine(models.Model):
         the stock should be reserved for the blanket order at the start of the validity
         period, not at the time of the call-off order.
         """
-        values = super()._prepare_reserve_procurement_values(group_id)
+        values = super()._prepare_reserve_procurement_values(reference)
         values["date_planned"] = self.blanket_validity_start_date
         values["date_deadline"] = self.blanket_validity_start_date
         return values
@@ -507,22 +506,22 @@ class SaleOrderLine(models.Model):
             return 0.0
         return super()._get_display_price()
 
-    def _prepare_procurement_values(self, group_id=False):
-        res = super()._prepare_procurement_values(group_id=group_id)
+    def _prepare_procurement_values(self):
+        res = super()._prepare_procurement_values()
         call_off_sale_line_id = self.env.context.get("call_off_sale_line_id")
         res["call_off_sale_line_id"] = call_off_sale_line_id
         return res
 
-    def _compute_tax_id(self):
+    def _compute_tax_ids(self):
         # Overload to consider the call-off order lines in the computation
         # For these lines we don't want to apply taxes. If we don't enforce
-        # the tax_id to False, we could end up with an amount to invoice
+        # the tax_ids to False, we could end up with an amount to invoice
         # if a fixed price is set on linked taxes. All the invoicing is done
         # on the blanket order line including the taxes.
         call_off_lines = self.filtered(lambda line: line.order_type == "call_off")
         other_lines = self - call_off_lines
-        call_off_lines.tax_id = False
-        return super(SaleOrderLine, other_lines)._compute_tax_id()
+        call_off_lines.tax_ids = False
+        return super(SaleOrderLine, other_lines)._compute_tax_ids()
 
     def _compute_qty_at_date(self):
         # Overload to consider the call-off order lines in the computation
@@ -532,11 +531,9 @@ class SaleOrderLine(models.Model):
         other_lines = self - call_off_lines
         res = super(SaleOrderLine, other_lines)._compute_qty_at_date()
         for line in call_off_lines:
-            blanket_line = fields.first(
-                line.blanket_order_id.order_line.filtered(
-                    lambda item, line=line: item.product_id == line.product_id
-                )
-            )
+            blanket_line = line.blanket_order_id.order_line.filtered(
+                lambda item, line=line: item.product_id == line.product_id
+            )[:1]
             line.virtual_available_at_date = blanket_line.virtual_available_at_date
             line.scheduled_date = blanket_line.scheduled_date
             line.forecast_expected_date = blanket_line.forecast_expected_date
@@ -584,7 +581,7 @@ class SaleOrderLine(models.Model):
             line.qty_to_invoice = 0
         return res
 
-    def _action_launch_stock_rule(self, previous_product_uom_qty=False):
+    def _action_launch_stock_rule(self, *, previous_product_uom_qty=False):
         # Overload to consider the call-off order lines in the computation
         # The launch of the stock rule is done on the blanket order lines.
         # In case of multiple lines for the same product, we must ensure that
@@ -629,7 +626,7 @@ class SaleOrderLine(models.Model):
                         float_compare(
                             qty_to_deliver,
                             blanket_line.call_off_remaining_qty,
-                            precision_rounding=blanket_line.product_uom.rounding,
+                            precision_rounding=blanket_line.product_uom_id.rounding,
                         )
                         <= 0
                     ):
@@ -643,7 +640,7 @@ class SaleOrderLine(models.Model):
                     qty_deliverable = blanket_line.call_off_remaining_qty
                     if not float_is_zero(
                         qty_deliverable,
-                        precision_rounding=call_off_line.product_uom.rounding,
+                        precision_rounding=call_off_line.product_uom_id.rounding,
                     ):
                         call_off_line = call_off_line.with_context(
                             call_off_split_process=True
@@ -662,7 +659,7 @@ class SaleOrderLine(models.Model):
                         new_call_off_line.state = call_off_line.state
                 if not float_is_zero(
                     qty_to_deliver,
-                    precision_rounding=call_off_line.product_uom.rounding,
+                    precision_rounding=call_off_line.product_uom_id.rounding,
                 ):
                     raise ValueError(
                         "The quantity to deliver on the call-off order line "
@@ -733,32 +730,10 @@ class SaleOrderLine(models.Model):
         to deliver on the blanket order line.
         """
         self.ensure_one()
-        product_packaging_id = None
-        packaging = self.product_packaging_id
-        if packaging:
-            is_packaging_valid = packaging._check_qty_in_packaging(
-                product_uom_qty, self.product_uom
-            )
-            if self.blanket_strict_packaging and not is_packaging_valid:
-                raise ValidationError(
-                    _(
-                        "The quantity to deliver on the call-off order line must be "
-                        "compatible with the packaging defined on the blanket order "
-                        "line. (Product: '%(product)s', Packaging: '%(packaging)s', "
-                        "Quantity: '%(quantity)s %(uom)s')",
-                        product=self.product_id.display_name,
-                        packaging=packaging.display_name,
-                        quantity=product_uom_qty,
-                        uom=self.product_uom.name,
-                    )
-                )
-            if is_packaging_valid:
-                product_packaging_id = packaging.id
         return {
             "product_id": self.product_id.id,
             "product_uom_qty": product_uom_qty,
-            "product_uom": self.product_uom.id,
-            "product_packaging_id": product_packaging_id,
+            "product_uom_id": self.product_uom_id.id,
         }
 
     def _prepare_call_of_vals_to_deliver_blanket_remaining_qty(self):
@@ -782,12 +757,12 @@ class SaleOrderLine(models.Model):
             called_qty = line.product_uom_qty - line.call_off_remaining_qty
             if (
                 float_compare(
-                    new_qty, called_qty, precision_rounding=line.product_uom.rounding
+                    new_qty, called_qty, precision_rounding=line.product_uom_id.rounding
                 )
                 < 0
             ):
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The forecasted quantity cannot be less than the quantity "
                         "already called by call-off orders."
                     )

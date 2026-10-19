@@ -21,13 +21,13 @@ Sale Order Blanket Order
     :target: http://www.gnu.org/licenses/agpl-3.0-standalone.html
     :alt: License: AGPL-3
 .. |badge3| image:: https://img.shields.io/badge/github-OCA%2Fsale--blanket-lightgray.png?logo=github
-    :target: https://github.com/OCA/sale-blanket/tree/18.0/sale_order_blanket_order
+    :target: https://github.com/OCA/sale-blanket/tree/19.0/sale_order_blanket_order
     :alt: OCA/sale-blanket
 .. |badge4| image:: https://img.shields.io/badge/weblate-Translate%20me-F47D42.png
-    :target: https://translation.odoo-community.org/projects/sale-blanket-18-0/sale-blanket-18-0-sale_order_blanket_order
+    :target: https://translation.odoo-community.org/projects/sale-blanket-19-0/sale-blanket-19-0-sale_order_blanket_order
     :alt: Translate me on Weblate
 .. |badge5| image:: https://img.shields.io/badge/runboat-Try%20me-875A7B.png
-    :target: https://runboat.odoo-community.org/builds?repo=OCA/sale-blanket&target_branch=18.0
+    :target: https://runboat.odoo-community.org/builds?repo=OCA/sale-blanket&target_branch=19.0
     :alt: Try me on Runboat
 
 |badge1| |badge2| |badge3| |badge4| |badge5|
@@ -41,17 +41,17 @@ Blanket Order
 A Blanket Order is a standard sales order with the following specific
 features:
 
-- Type: Classified as "Blanket Order".
-- Defined Duration: Includes a validity period (end date).
-- Payment Terms: Allows selection of preferred terms (e.g., 90 days end
-  of month, upon delivery, etc.).
-- Invoicing Policy: Can be based on product settings or the order
-  itself.
-- Stock Reservation: Allows advance reservation of sold quantities.
-- Handling Unfulfilled Quantities: Provides options for dealing with
-  undelivered quantities upon order expiration.
-- Prices are calculated based on existing rules since it is a standard
-  sales order type.
+-  Type: Classified as "Blanket Order".
+-  Defined Duration: Includes a validity period (end date).
+-  Payment Terms: Allows selection of preferred terms (e.g., 90 days end
+   of month, upon delivery, etc.).
+-  Invoicing Policy: Can be based on product settings or the order
+   itself.
+-  Stock Reservation: Allows advance reservation of sold quantities.
+-  Handling Unfulfilled Quantities: Provides options for dealing with
+   undelivered quantities upon order expiration.
+-  Prices are calculated based on existing rules since it is a standard
+   sales order type.
 
 The blanket order serves as the central element triggering stock
 management and invoicing mechanisms.
@@ -98,12 +98,12 @@ Call-off Order
 A Call-off Order is a standard sales order with these specific
 characteristics:
 
-- Type: Classified as "Call-off Order".
-- Linked to Blanket Order: Only includes products from the blanket
-  order.
-- Delivery Release: Enables the release of reserved stock for delivery.
-- No Invoicing or Stock Management: These are handled via the linked
-  blanket order.
+-  Type: Classified as "Call-off Order".
+-  Linked to Blanket Order: Only includes products from the blanket
+   order.
+-  Delivery Release: Enables the release of reserved stock for delivery.
+-  No Invoicing or Stock Management: These are handled via the linked
+   blanket order.
 
 Stock Management
 ----------------
@@ -112,8 +112,8 @@ No delivery is generated directly from the call-off order.
 
 It triggers:
 
-- Release of the reserved quantity in the blanket order.
-- Adjustment of stock reservations for the remaining quantities.
+-  Release of the reserved quantity in the blanket order.
+-  Adjustment of stock reservations for the remaining quantities.
 
 Standard Sales Orders
 =====================
@@ -141,9 +141,9 @@ that defines the terms and conditions of the sales.
 
 If you need a way to define:
 
-- the terms and conditions of the sales,
-- the payment terms,
-- the delivery terms,
+-  the terms and conditions of the sales,
+-  the payment terms,
+-  the delivery terms,
 
 and also secure the quantities of the products to be delivered, the sale
 order blanket order module is the right choice.
@@ -160,7 +160,7 @@ This module introduces 2 new kinds of sales orders:
 
 Others modules can be used to provide the same kind of features. For
 example, the module
-(sale_blanket_order)[https://pypi.org/project/odoo-addon-sale-blanket-order]
+(sale_blanket_order)[`https://pypi.org/project/odoo-addon-sale-blanket-order] <https://pypi.org/project/odoo-addon-sale-blanket-order]>`__
 also defines the concept of sale blanket order. The main difference
 between the two modules is that the sale order blanket order module
 extends the sale order model to add the sale blanket order and the call
@@ -183,7 +183,7 @@ Bug Tracker
 Bugs are tracked on `GitHub Issues <https://github.com/OCA/sale-blanket/issues>`_.
 In case of trouble, please check there if your issue has already been reported.
 If you spotted it first, help us to smash it by providing a detailed and welcomed
-`feedback <https://github.com/OCA/sale-blanket/issues/new?body=module:%20sale_order_blanket_order%0Aversion:%2018.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
+`feedback <https://github.com/OCA/sale-blanket/issues/new?body=module:%20sale_order_blanket_order%0Aversion:%2019.0%0A%0A**Steps%20to%20reproduce**%0A-%20...%0A%0A**Current%20behavior**%0A%0A**Expected%20behavior**>`_.
 
 Do not contact contributors directly about support or help with technical issues.
 
@@ -199,15 +199,15 @@ Authors
 Contributors
 ------------
 
-- Laurent Mignon\ laurent.mignon@acsone.eu (https://www.acsone.eu)
-- Jacques-Etienne Baudoux (BCIM) je@bcim.be
+-  Laurent Mignon\ laurent.mignon@acsone.eu (https://www.acsone.eu)
+-  Jacques-Etienne Baudoux (BCIM) je@bcim.be
 
 Other credits
 -------------
 
 The development of this module has been financially supported by:
 
-- ALCYON Belux
+-  ALCYON Belux
 
 Maintainers
 -----------
@@ -233,6 +233,6 @@ Current `maintainers <https://odoo-community.org/page/maintainer-role>`__:
 
 |maintainer-jbaudoux| |maintainer-lmignon| 
 
-This module is part of the `OCA/sale-blanket <https://github.com/OCA/sale-blanket/tree/18.0/sale_order_blanket_order>`_ project on GitHub.
+This module is part of the `OCA/sale-blanket <https://github.com/OCA/sale-blanket/tree/19.0/sale_order_blanket_order>`_ project on GitHub.
 
 You are welcome to contribute. To learn how please visit https://odoo-community.org/page/Contribute.

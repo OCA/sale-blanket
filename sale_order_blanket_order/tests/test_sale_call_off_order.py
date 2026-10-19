@@ -174,7 +174,7 @@ class TestSaleCallOffOrder(SaleOrderBlanketOrderCase):
                     "qty_available_today": blanket_line.qty_available_today,
                     "price_tax": 0.0,
                     "price_total": 0.0,
-                    "tax_id": [],
+                    "tax_ids": [],
                 }
             ],
         )
@@ -356,4 +356,4 @@ class TestSaleAutoDoneCallOffOrderProcessing(TestSaleCallOffOrderProcessing):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.env.user.groups_id += cls.env.ref("sale.group_auto_done_setting")
+        cls.env.user.group_ids += cls.env.ref("sale.group_auto_done_setting")

@@ -31,6 +31,7 @@ class SaleOrderBlanketOrderCase(BaseCommon):
         # need to call it manually to patch the _compute_price_unit method
         cls.env["sale.order.line"]._do_patch_compute_price_unit()
         # create a flat tax
+        country = cls.env.ref("base.be")
         cls.tax_fixed = cls.env["account.tax"].create(
             {
                 "sequence": 10,
@@ -38,6 +39,10 @@ class SaleOrderBlanketOrderCase(BaseCommon):
                 "amount": 10.0,
                 "amount_type": "fixed",
                 "include_base_amount": True,
+                "country_id": country.id,
+                "tax_group_id": cls.env["account.tax.group"]
+                .create({"name": "Test Tax Group", "country_id": country.id})
+                .id,
             }
         )
         cls.product_1 = cls.env["product.product"].create(
@@ -123,22 +128,22 @@ class SaleOrderBlanketOrderCase(BaseCommon):
         cls.so_model = cls.env["sale.order"]
         cls.call_off_domain = [("order_type", "=", "call_off")]
 
-        cls.product_2_pack2 = cls.env["product.packaging"].create(
+        uom_unit = cls.env.ref("uom.product_uom_unit")
+        cls.product_2_pack2 = cls.env["uom.uom"].create(
             {
                 "name": "Test Pack of 2",
-                "product_id": cls.product_2.id,
-                "qty": 2,
-                "sales": True,
+                "relative_factor": 2,
+                "relative_uom_id": uom_unit.id,
             }
         )
-        cls.product_2_pack3 = cls.env["product.packaging"].create(
+        cls.product_2_pack3 = cls.env["uom.uom"].create(
             {
                 "name": "Test Pack of 3",
-                "product_id": cls.product_2.id,
-                "qty": 3,
-                "sales": True,
+                "relative_factor": 3,
+                "relative_uom_id": uom_unit.id,
             }
         )
+        cls.product_2.uom_ids = cls.product_2_pack2 | cls.product_2_pack3
 
     @classmethod
     def _set_qty_in_loc_only(cls, product, qty, location=None):

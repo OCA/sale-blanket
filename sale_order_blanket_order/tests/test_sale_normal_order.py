@@ -162,7 +162,7 @@ class TestSaleNormalOrder(SaleOrderBlanketOrderCase):
                     "qty_delivered": 0.0,
                     "price_tax": 0.0,
                     "price_total": 0.0,
-                    "tax_id": [],
+                    "tax_ids": [],
                 }
             ],
         )
@@ -192,9 +192,9 @@ class TestSaleNormalOrder(SaleOrderBlanketOrderCase):
                     Command.create(
                         {
                             "product_id": self.product_2.id,
-                            "product_uom_qty": 3,
+                            "product_uom_qty": 1,
                             "price_unit": 100,
-                            "product_packaging_id": self.product_2_pack3.id,
+                            "product_uom_id": self.product_2_pack3.id,
                         },
                     ),
                 ],
@@ -211,15 +211,15 @@ class TestSaleNormalOrder(SaleOrderBlanketOrderCase):
             [
                 {
                     "product_id": self.product_2.id,
-                    "product_uom_qty": 3.0,
+                    "product_uom_qty": 1.0,
                     "price_unit": 0.0,
                     "qty_to_deliver": 0.0,
                     "qty_to_invoice": 0.0,
                     "qty_delivered": 0.0,
                     "price_tax": 0.0,
                     "price_total": 0.0,
-                    "product_packaging_id": self.product_2_pack3.id,
-                    "tax_id": [],
+                    "product_uom_id": self.product_2_pack3.id,
+                    "tax_ids": [],
                 }
             ],
         )
@@ -295,7 +295,7 @@ class TestSaleNormalOrder(SaleOrderBlanketOrderCase):
                         "qty_delivered": 0.0,
                         "price_tax": 0.0,
                         "price_total": 0.0,
-                        "tax_id": [],
+                        "tax_ids": [],
                     }
                 ],
             )
@@ -443,7 +443,7 @@ class TestSaleNormalOrder(SaleOrderBlanketOrderCase):
                     "qty_available_today": blanket_line.qty_available_today,
                     "price_tax": 0.0,
                     "price_total": 0.0,
-                    "tax_id": [],
+                    "tax_ids": [],
                 }
             ],
         )

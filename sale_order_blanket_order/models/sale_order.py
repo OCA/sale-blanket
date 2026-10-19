@@ -5,10 +5,9 @@ from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 
-from odoo import Command, _, api, fields, models
+from odoo import Command, api, fields, models
 from odoo.exceptions import ValidationError
-from odoo.osv import expression
-from odoo.osv.expression import FALSE_DOMAIN
+from odoo.fields import Domain
 from odoo.tools import float_compare
 
 
@@ -125,7 +124,7 @@ class SaleOrder(models.Model):
     )
 
     def init(self):
-        self._cr.execute(
+        self.env.cr.execute(
             """
             CREATE INDEX IF NOT EXISTS
                 sale_order_blanket_order_to_finalize_index
@@ -142,14 +141,20 @@ class SaleOrder(models.Model):
             if order.state != "sale":
                 continue
             if order.order_type == "blanket" and order.blanket_order_id:
-                raise ValidationError(_("A blanket order cannot have a blanket order."))
+                raise ValidationError(
+                    self.env._("A blanket order cannot have a blanket order.")
+                )
             if (
                 order.order_type == "call_off"
                 and order.blanket_order_id.order_type != "blanket"
             ):
-                raise ValidationError(_("A call-off order must have a blanket order."))
+                raise ValidationError(
+                    self.env._("A call-off order must have a blanket order.")
+                )
             if order.order_type == "order" and order.blanket_order_id:
-                raise ValidationError(_("An order cannot have a blanket order."))
+                raise ValidationError(
+                    self.env._("An order cannot have a blanket order.")
+                )
 
     @api.constrains(
         "order_type",
@@ -164,15 +169,19 @@ class SaleOrder(models.Model):
             if order.order_type == "blanket":
                 if not order.blanket_validity_start_date:
                     raise ValidationError(
-                        _("The validity start date is required for a blanket order.")
+                        self.env._(
+                            "The validity start date is required for a blanket order."
+                        )
                     )
                 if not order.blanket_validity_end_date:
                     raise ValidationError(
-                        _("The validity end date is required for a blanket order.")
+                        self.env._(
+                            "The validity end date is required for a blanket order."
+                        )
                     )
                 if order.blanket_validity_end_date < order.blanket_validity_start_date:
                     raise ValidationError(
-                        _(
+                        self.env._(
                             "The validity end date must be greater than the "
                             "validity start date."
                         )
@@ -202,7 +211,7 @@ class SaleOrder(models.Model):
                 > rec.blanket_order_id.blanket_validity_end_date
             ):
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The call-off order must be within the validity period of "
                         "the blanket order."
                     )
@@ -224,7 +233,7 @@ class SaleOrder(models.Model):
                 "done",
             ):
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The blanket order must be confirmed before creating a "
                         "call-off order."
                     )
@@ -236,7 +245,7 @@ class SaleOrder(models.Model):
             if order.order_type == "call_off" and self.partner_id:
                 domain = order._get_single_blanket_order_candidates_domain()
             else:
-                domain = FALSE_DOMAIN
+                domain = list(Domain.FALSE)
 
             order.blanket_order_id_domain = domain
 
@@ -297,7 +306,7 @@ class SaleOrder(models.Model):
                 if order.is_blanket_reservation_strategy_editable:
                     continue
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The reservation strategy cannot be modified on order "
                         "%(order)s.",
                         order=order.name,
@@ -310,7 +319,7 @@ class SaleOrder(models.Model):
                 if order.is_blanket_eol_strategy_editable:
                     continue
                 raise ValidationError(
-                    _(
+                    self.env._(
                         "The end-of-life strategy cannot be modified on order "
                         "%(order)s.",
                         order=order.name,
@@ -322,7 +331,7 @@ class SaleOrder(models.Model):
         action = self.env["ir.actions.act_window"]._for_xml_id("sale.action_orders")
         action["domain"] = [("blanket_order_id", "=", self.id)]
         action["context"] = dict(
-            self._context,
+            self.env.context,
             default_blanket_order_id=self.id,
             default_partner_id=self.partner_id.id,
             default_partner_invoice_id=self.partner_invoice_id.id,
@@ -344,7 +353,7 @@ class SaleOrder(models.Model):
                         0,
                         {
                             "product_id": line.product_id.id,
-                            "product_packaging_id": line.product_packaging_id.id,
+                            "product_uom_id": line.product_uom_id.id,
                             "call_off_remaining_qty": line.call_off_remaining_qty,
                             "qty_to_deliver": line.call_off_remaining_qty,
                             "sale_order_line_id": line.id,
@@ -357,7 +366,9 @@ class SaleOrder(models.Model):
         )
 
         return {
-            "name": _("Create call-off sale order for products still to be delivered"),
+            "name": self.env._(
+                "Create call-off sale order for products still to be delivered"
+            ),
             "type": "ir.actions.act_window",
             "view_mode": "form",
             "res_model": "sale.order.deliver.remaining.wizard",
@@ -412,7 +423,7 @@ class SaleOrder(models.Model):
         invalid_orders = self.filtered(lambda order: order.order_type != "blanket")
         if invalid_orders:
             raise ValidationError(
-                _("Only blanket orders can be confirmed as blanket orders.")
+                self.env._("Only blanket orders can be confirmed as blanket orders.")
             )
         # trigger validation on sale order lines for constrains
         # _validate_fields We force the validation to be done here
@@ -434,7 +445,7 @@ class SaleOrder(models.Model):
         invalid_orders = self.filtered(lambda order: order.order_type != "call_off")
         if invalid_orders:
             raise ValidationError(
-                _("Only call-off orders can be confirmed as call-off orders.")
+                self.env._("Only call-off orders can be confirmed as call-off orders.")
             )
         self._link_lines_to_blanket_order_line()
 
@@ -521,12 +532,12 @@ class SaleOrder(models.Model):
             if not blanket_lines:
                 continue
             remaining_qty = sum(blanket_lines.mapped("call_off_remaining_qty"))
-            rounding = blanket_lines[0].product_uom.rounding
+            rounding = blanket_lines[0].product_uom_id.rounding
             if (
                 float_compare(
                     remaining_qty,
                     0.0,
-                    precision_rounding=blanket_lines[0].product_uom.rounding,
+                    precision_rounding=blanket_lines[0].product_uom_id.rounding,
                 )
                 <= 0
             ):
@@ -582,18 +593,16 @@ class SaleOrder(models.Model):
     def _log_line_moved_to_call_off(self, line, call_off, original_order):
         """Log the line movement to the call-off order."""
         original_order.message_post(
-            body=_(
-                _(
-                    "The line %(line)s has been moved to a new call-off order "
-                    "%(call_off)s."
-                ),
+            body=self.env._(
+                "The line %(line)s has been moved to a new call-off order "
+                "%(call_off)s.",
                 line=line.display_name,
                 call_off=call_off._get_html_link(),
             )
         )
         call_off.message_post(
-            body=_(
-                _("The line %(line)s has been moved from order %(order)s."),
+            body=self.env._(
+                "The line %(line)s has been moved from order %(order)s.",
                 line=line.display_name,
                 order=original_order._get_html_link(),
             )
@@ -604,22 +613,18 @@ class SaleOrder(models.Model):
     ):
         """Log the line partial movement to the call-off order."""
         call_off.message_post(
-            body=_(
-                _(
-                    "The line %(line)s has been created from order %(order)s. "
-                    "(Qty moved: %(qty_deliverable)s)"
-                ),
+            body=self.env._(
+                "The line %(line)s has been created from order %(order)s. "
+                "(Qty moved: %(qty_deliverable)s)",
                 line=new_line.display_name,
                 order=original_order._get_html_link(),
                 qty_deliverable=qty_deliverable,
             )
         )
         original_order.message_post(
-            body=_(
-                _(
-                    "The line %(line)s has been partially moved to a new call-off "
-                    "order %(call_off)s. (Qty moved: %(qty_deliverable)s)"
-                ),
+            body=self.env._(
+                "The line %(line)s has been partially moved to a new call-off "
+                "order %(call_off)s. (Qty moved: %(qty_deliverable)s)",
                 line=line.display_name,
                 call_off=call_off._get_html_link(),
                 qty_deliverable=qty_deliverable,
@@ -664,7 +669,7 @@ class SaleOrder(models.Model):
         for order in self:
             order_domain = order._get_single_blanket_order_candidates_domain()
             domains.append(order_domain)
-        return expression.OR(domains)
+        return Domain.OR(domains)
 
     def _get_blanket_order_candidates(self):
         """Get the blanket order candidates for the order lines."""
@@ -697,6 +702,7 @@ class SaleOrder(models.Model):
         We will create a call-off order for the remaining quantity of the blanket order.
         and confirm it.
         """
+        # pylint: disable-next=no-search-all
         delivery_product_ids = self.env["delivery.carrier"].search([]).product_id.ids
         for record in self:
             order_lines = []
@@ -705,7 +711,7 @@ class SaleOrder(models.Model):
                     float_compare(
                         line.call_off_remaining_qty,
                         0,
-                        precision_rounding=line.product_uom.rounding,
+                        precision_rounding=line.product_uom_id.rounding,
                     )
                     > 0
                 ):
