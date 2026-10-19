@@ -12,15 +12,15 @@ class SaleOrder(models.Model):
         ondelete={"at_confirm": "cascade"},
     )
 
-    def _get_or_create_reserve_procurement_group(self):
-        """Get or create the procurement group for the reservation."""
+    def _get_or_create_reserve_stock_reference(self):
+        """Get or create the stock reference for the reservation."""
         self.ensure_one()
         picking_reservations = self._get_reservation_pickings().filtered(
             lambda p: p.state in ("assigned", "confirmed")
         )
         if picking_reservations:
-            return picking_reservations[0].group_id
-        return self._create_reserve_procurement_group()
+            return picking_reservations[0].reference_ids[:1]
+        return self._create_reserve_stock_reference()
 
     def _blanket_order_reserve_call_off_remaining_qty(self):
         """Reserve the stock for the blanket order."""

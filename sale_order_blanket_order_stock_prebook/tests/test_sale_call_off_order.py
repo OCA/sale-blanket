@@ -136,4 +136,4 @@ class TestSaleAutoDoneCallOffOrderProcessing(TestSaleCallOffOrderProcessing):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.env.user.groups_id += cls.env.ref("sale.group_auto_done_setting")
+        cls.env.user.group_ids += cls.env.ref("sale.group_auto_done_setting")
