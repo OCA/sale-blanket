@@ -65,6 +65,17 @@ class TestSaleBlanketOrder(SaleOrderBlanketOrderCase):
         reserved_qty = sum(moves.mapped("product_uom_qty"))
         self.assertEqual(reserved_qty, 15)
 
+    def test_reservation_line_uom(self):
+        so_line_product_2 = self.blanket_so.order_line.filtered(
+            lambda line: line.product_id == self.product_2
+        )
+        so_line_product_2.product_uom_id = self.product_2_pack2
+        self.blanket_so.action_confirm()
+        moves = self._get_current_moves(
+            self.blanket_so, self.product_2, only_reservation=True
+        )
+        self.assertEqual(sum(moves.mapped("product_qty")), 20)
+
     def test_update_current_reservation_with_delivered_qty(self):
         self.blanket_so.action_confirm()
         so_line_product_2 = self.blanket_so.order_line.filtered(

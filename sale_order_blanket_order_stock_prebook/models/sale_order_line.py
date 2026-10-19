@@ -19,10 +19,13 @@ class SaleOrderLine(models.Model):
         if forced_qty:
             self.ensure_one()
             proc = procurements[0]
+            product_qty, procurement_uom = self.product_uom_id._adjust_uom_quantities(
+                forced_qty, self.product_id.uom_id
+            )
             proc = self.env["stock.rule"].Procurement(
                 proc.product_id,
-                forced_qty,
-                proc.product_uom,
+                product_qty,
+                procurement_uom,
                 proc.location_id,
                 proc.name,
                 proc.origin,
