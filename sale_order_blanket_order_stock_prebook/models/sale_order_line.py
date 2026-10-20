@@ -44,7 +44,7 @@ class SaleOrderLine(models.Model):
         for line in self:
             lines_by_order[line.order_id] |= line
         for order, lines in lines_by_order.items():
-            reference = order._get_or_create_reserve_stock_reference()
+            reference = None
             for line in lines:
                 if line.id in previous_product_uom_qty:
                     line._release_reservation()
@@ -53,6 +53,8 @@ class SaleOrderLine(models.Model):
                     line.product_uom_id.compare(remaining_qty, 0) > 0
                     and line._should_prebook_stock()
                 ):
+                    if not reference:
+                        reference = order._get_or_create_reserve_stock_reference()
                     procurements += line.with_context(
                         force_qty=remaining_qty
                     )._prepare_reserve_procurements(reference)

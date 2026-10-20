@@ -131,6 +131,33 @@ class TestSaleCallOffOrderProcessing(SaleOrderBlanketOrderCase):
             15.0,
         )
 
+    @freezegun.freeze_time("2025-02-01")
+    def test_full_call_off_no_empty_reservation_reference(self):
+        order = self.env["sale.order"].create(
+            {
+                "order_type": "call_off",
+                "partner_id": self.partner.id,
+                "blanket_order_id": self.blanket_so.id,
+                "order_line": [
+                    Command.create(
+                        {"product_id": self.product_1.id, "product_uom_qty": 20.0}
+                    ),
+                    Command.create(
+                        {"product_id": self.product_2.id, "product_uom_qty": 10.0}
+                    ),
+                ],
+            }
+        )
+        order.action_confirm()
+        self.assertFalse(
+            self.env["stock.reference"].search(
+                [
+                    ("name", "=", f"Reservation for {self.blanket_so.name}"),
+                    ("move_ids", "=", False),
+                ]
+            )
+        )
+
 
 class TestSaleAutoDoneCallOffOrderProcessing(TestSaleCallOffOrderProcessing):
     @classmethod
