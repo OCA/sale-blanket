@@ -7,8 +7,8 @@ from odoo import models
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
-    def _prepare_procurement_values(self, group_id=False):
-        values = super()._prepare_procurement_values(group_id)
+    def _prepare_procurement_values(self):
+        values = super()._prepare_procurement_values()
         order = self.order_id
         if (
             order.order_type == "blanket"

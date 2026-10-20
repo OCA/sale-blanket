@@ -84,9 +84,7 @@ class SaleOrder(models.Model):
         blanket_orders = self.filtered(
             lambda o: o.order_type == "blanket" and o.state != "draft"
         )
-        if not blanket_orders or blanket_orders._context.get(
-            "from_inverse_commitment_date"
-        ):
+        if not blanket_orders or self.env.context.get("from_inverse_commitment_date"):
             return
 
         for order in blanket_orders:
