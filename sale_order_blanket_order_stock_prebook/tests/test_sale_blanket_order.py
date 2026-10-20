@@ -76,6 +76,23 @@ class TestSaleBlanketOrder(SaleOrderBlanketOrderCase):
         )
         self.assertEqual(sum(moves.mapped("product_qty")), 20)
 
+    def test_reservation_no_prebook_product(self):
+        route = self.env["stock.route"].create(
+            {"name": "No prebook", "no_sale_stock_prebook": True}
+        )
+        self.product_2.route_ids = [Command.link(route.id)]
+        self.blanket_so.action_confirm()
+        self.assertFalse(
+            self._get_current_moves(
+                self.blanket_so, self.product_2, only_reservation=True
+            )
+        )
+        self.assertTrue(
+            self._get_current_moves(
+                self.blanket_so, self.product_1, only_reservation=True
+            )
+        )
+
     def test_update_current_reservation_with_delivered_qty(self):
         self.blanket_so.action_confirm()
         so_line_product_2 = self.blanket_so.order_line.filtered(

@@ -49,7 +49,10 @@ class SaleOrderLine(models.Model):
                 if line.id in previous_product_uom_qty:
                     line._release_reservation()
                 remaining_qty = line.call_off_remaining_qty
-                if line.product_uom_id.compare(remaining_qty, 0) > 0:
+                if (
+                    line.product_uom_id.compare(remaining_qty, 0) > 0
+                    and line._should_prebook_stock()
+                ):
                     procurements += line.with_context(
                         force_qty=remaining_qty
                     )._prepare_reserve_procurements(reference)
