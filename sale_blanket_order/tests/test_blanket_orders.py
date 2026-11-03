@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 from odoo import fields
 from odoo.exceptions import UserError
-from odoo.tests import common
+from odoo.tests import Form, common
 
 
 class TestSaleBlanketOrders(common.TransactionCase):
@@ -503,6 +503,65 @@ class TestSaleBlanketOrders(common.TransactionCase):
         view_action = blanket_order.action_view_sale_orders()
         domain_ids = view_action["domain"][0][2]
         self.assertEqual(len(domain_ids), 3)
+
+    def test_07_change_quantity_in_confirmed_blanket_order(self):
+        """We can set the blanket order to draft and reduce
+        the original quantity, but not below the ordered
+        """
+        blanket_order = self.blanket_order_obj.create(
+            {
+                "partner_id": self.partner.id,
+                "validity_date": fields.Date.to_string(self.tomorrow),
+                "payment_term_id": self.payment_term.id,
+                "pricelist_id": self.sale_pricelist.id,
+                "line_ids": [
+                    fields.Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "product_uom": self.product.uom_id.id,
+                            "original_uom_qty": 30.0,
+                            "price_unit": 30.0,
+                        },
+                    ),
+                    fields.Command.create(
+                        {
+                            "product_id": self.product2.id,
+                            "product_uom": self.product2.uom_id.id,
+                            "original_uom_qty": 20.0,
+                            "price_unit": 60.0,
+                        },
+                    ),
+                ],
+            }
+        )
+        blanket_order.sudo().onchange_partner_id()
+        blanket_order.sudo().action_confirm()
+
+        wizard1 = self.blanket_order_wiz_obj.with_context(
+            active_id=blanket_order.id, active_model="sale.blanket.order"
+        ).create({})
+        wizard1.line_ids.filtered(lambda line: line.product_id == self.product).write(
+            {"qty": 15.0}
+        )
+        wizard1.line_ids.filtered(lambda line: line.product_id == self.product2).write(
+            {"qty": 10.0}
+        )
+        wizard1.sudo().create_sale_order()
+        blanket_order.set_to_draft()
+        with self.assertRaises(UserError):
+            with Form(blanket_order) as blanket_order_form:
+                with blanket_order_form.line_ids.edit(0) as line:
+                    line.original_uom_qty = 10.0  # below ordered
+        with Form(blanket_order) as blanket_order_form:
+            with blanket_order_form.line_ids.edit(1) as line:
+                line.original_uom_qty = 18.0  # valid
+            blanket_order2 = blanket_order_form.save()
+        self.assertEqual(
+            blanket_order2.line_ids.filtered(
+                lambda line: line.product_id == self.product2
+            ).original_uom_qty,
+            18.0,
+        )
 
     def test_compute_uom_qty(self):
         """We confirm the shared blanket order and check that the computed qty
