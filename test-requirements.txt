@@ -1,0 +1,5 @@
+odoo-addon-sale_order_blanket_order @ git+https://github.com/OCA/sale-blanket.git@refs/pull/56/head#subdirectory=sale_order_blanket_order
+odoo-addon-sale_order_blanket_order_stock_prebook @ git+https://github.com/OCA/sale-blanket.git@refs/pull/57/head#subdirectory=sale_order_blanket_order_stock_prebook
+odoo-addon-sale_stock_prebook @ git+https://github.com/OCA/sale-prebook.git@refs/pull/21/head#subdirectory=sale_stock_prebook
+odoo-addon-stock_available_to_promise_release @ git+https://github.com/OCA/stock-logistics-reservation.git@refs/pull/74/head#subdirectory=stock_available_to_promise_release
+odoo-addon-stock_warehouse_out_pull @ git+https://github.com/OCA/stock-logistics-warehouse.git@refs/pull/2677/head#subdirectory=stock_warehouse_out_pull
