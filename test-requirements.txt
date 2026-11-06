@@ -1,0 +1,2 @@
+odoo-addon-sale_order_blanket_order @ git+https://github.com/OCA/sale-blanket.git@refs/pull/56/head#subdirectory=sale_order_blanket_order
+odoo-addon-sale_stock_prebook @ git+https://github.com/OCA/sale-prebook.git@refs/pull/21/head#subdirectory=sale_stock_prebook
