@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 18.0\n"
+"Project-Id-Version: Odoo Server 19.0\n"
 "Report-Msgid-Bugs-To: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -210,8 +210,15 @@ msgid "Deliver remaining"
 msgstr ""
 
 #. module: sale_order_blanket_order
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_product_template__display_name
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_res_company__display_name
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order__display_name
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_deliver_remaining_wizard__display_name
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_deliver_remaining_wizard_line__display_name
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_line__display_name
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_stock_move__display_name
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_stock_rule__display_name
 msgid "Display Name"
 msgstr ""
 
@@ -233,8 +240,15 @@ msgid ""
 msgstr ""
 
 #. module: sale_order_blanket_order
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_product_template__id
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_res_company__id
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_res_config_settings__id
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order__id
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_deliver_remaining_wizard__id
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_deliver_remaining_wizard_line__id
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_line__id
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_stock_move__id
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_stock_rule__id
 msgid "ID"
 msgstr ""
 
@@ -366,11 +380,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:sale_order_blanket_order.sale_order_line_search_view
 #: model_terms:ir.ui.view,arch_db:sale_order_blanket_order.sale_order_search_view
 msgid "Order Type"
-msgstr ""
-
-#. module: sale_order_blanket_order
-#: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_deliver_remaining_wizard_line__product_packaging_id
-msgid "Packaging"
 msgstr ""
 
 #. module: sale_order_blanket_order
@@ -627,15 +636,6 @@ msgstr ""
 #. odoo-python
 #: code:addons/sale_order_blanket_order/models/sale_order_line.py:0
 msgid ""
-"The quantity to deliver on the call-off order line must be compatible with "
-"the packaging defined on the blanket order line. (Product: '%(product)s', "
-"Packaging: '%(packaging)s', Quantity: '%(quantity)s %(uom)s')"
-msgstr ""
-
-#. module: sale_order_blanket_order
-#. odoo-python
-#: code:addons/sale_order_blanket_order/models/sale_order_line.py:0
-msgid ""
 "The quantity to procure is greater than the quantity remaining to deliver in"
 " the linked blanket order for this product. (Product: '%(product)s', Order: "
 "'%(order)s', Blanket Order: '%(blanket_order)s')"
@@ -680,6 +680,11 @@ msgstr ""
 #. module: sale_order_blanket_order
 #: model_terms:ir.ui.view,arch_db:sale_order_blanket_order.sale_order_form_view
 msgid "To Call-off"
+msgstr ""
+
+#. module: sale_order_blanket_order
+#: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_deliver_remaining_wizard_line__product_uom_id
+msgid "Unit"
 msgstr ""
 
 #. module: sale_order_blanket_order
