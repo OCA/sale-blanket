@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
-from odoo.tools import SQL, float_compare, float_is_zero
+from odoo.tools import SQL, float_compare, float_is_zero, float_round
 
 
 # Code taken from server-ux/base_optional_quick_create
@@ -289,7 +289,12 @@ class SaleOrderLine(models.Model):
                 )
 
     @api.depends(
-        "call_off_line_ids", "order_type", "call_off_line_ids.state", "product_uom_qty"
+        "call_off_line_ids",
+        "order_type",
+        "call_off_line_ids.state",
+        "call_off_line_ids.product_uom_id",
+        "product_uom_qty",
+        "product_uom_id",
     )
     def _compute_call_off_remaining_qty(self):
         """Compute the quantity remaining to deliver for call-off order lines.
@@ -297,19 +302,34 @@ class SaleOrderLine(models.Model):
         This value is only relevant on blanket order lines. It's used to know how much
         quantity is still available to deliver by a call-off order lines.
         """
-        self.flush_model(["product_uom_qty", "order_type", "blanket_line_id", "state"])
+        self.flush_model(
+            [
+                "product_uom_qty",
+                "product_uom_id",
+                "order_type",
+                "blanket_line_id",
+                "state",
+            ]
+        )
         blanket_lines = self.filtered(lambda line: line.order_type == "blanket")
         res = self._read_group(
             [
                 ("blanket_line_id", "in", blanket_lines.ids),
                 ("state", "!=", "cancel"),
             ],
-            ["blanket_line_id"],
+            ["blanket_line_id", "product_uom_id"],
             ["product_uom_qty:sum"],
             order="blanket_line_id",
         )
 
-        call_off_delivered_qty = dict(res)
+        call_off_delivered_qty = defaultdict(float)
+        for blanket_line, uom, qty in res:
+            # call-off lines can use another packaging (UoM) than the blanket line.
+            # Not rounded: 1 unit of a pack of 3 rounded up to 0.34 pack would
+            # prevent calling off the last 2 units.
+            call_off_delivered_qty[blanket_line] += uom._compute_quantity(
+                qty, blanket_line.product_uom_id, round=False
+            )
         for line in self:
             new_call_off_remaining_qty = call_off_delivered_qty.get(line, 0.0)
             if line in blanket_lines:
@@ -345,15 +365,24 @@ class SaleOrderLine(models.Model):
                     )
                 )
 
+            product_uom = call_of_lines[0].product_id.uom_id
             qty_remaining_to_procure = sum(
-                blanket_lines.mapped("call_off_remaining_qty")
+                line.product_uom_id._compute_quantity(
+                    line.call_off_remaining_qty, product_uom, round=False
+                )
+                for line in blanket_lines
             )
-            qty_to_procure = sum(call_of_lines.mapped("product_uom_qty"))
+            qty_to_procure = sum(
+                line.product_uom_id._compute_quantity(
+                    line.product_uom_qty, product_uom, round=False
+                )
+                for line in call_of_lines
+            )
             if (
                 float_compare(
                     qty_to_procure,
                     qty_remaining_to_procure,
-                    precision_rounding=call_of_lines[0].product_uom_id.rounding,
+                    precision_rounding=product_uom.rounding,
                 )
                 > 0
             ):
@@ -621,12 +650,18 @@ class SaleOrderLine(models.Model):
                     continue
                 qty_to_deliver = call_off_line.product_uom_qty
                 for blanket_line in blanket_lines:
+                    # quantities are compared in the call-off line UoM
+                    qty_deliverable = blanket_line.product_uom_id._compute_quantity(
+                        blanket_line.call_off_remaining_qty,
+                        call_off_line.product_uom_id,
+                        round=False,
+                    )
                     # All the call-off quantities can be delivered on this blanket line
                     if (
                         float_compare(
                             qty_to_deliver,
-                            blanket_line.call_off_remaining_qty,
-                            precision_rounding=blanket_line.product_uom_id.rounding,
+                            qty_deliverable,
+                            precision_rounding=call_off_line.product_uom_id.rounding,
                         )
                         <= 0
                     ):
@@ -637,7 +672,6 @@ class SaleOrderLine(models.Model):
                     # on this blanket line. We split the call-off line into a new line
                     # which will consume the remaining quantity on this blanket line.
                     # The remaining quantity will be consumed by the next blanket line.
-                    qty_deliverable = blanket_line.call_off_remaining_qty
                     if not float_is_zero(
                         qty_deliverable,
                         precision_rounding=call_off_line.product_uom_id.rounding,
@@ -688,7 +722,9 @@ class SaleOrderLine(models.Model):
         self.ensure_one()
         if self.order_type != "blanket":
             raise ValueError("This method is only valid for blanket order lines.")
-        qty_to_deliver = call_off_line.product_uom_qty
+        qty_to_deliver = call_off_line.product_uom_id._compute_quantity(
+            call_off_line.product_uom_qty, self.product_uom_id, round=False
+        )
         old_state = self.state
         if old_state == "done":
             # We must unlock the line to manually deliver the quantity
@@ -730,10 +766,28 @@ class SaleOrderLine(models.Model):
         to deliver on the blanket order line.
         """
         self.ensure_one()
+        uom = self.product_uom_id
+        product_uom = self.product_id.uom_id
+        digits = self._fields["product_uom_qty"].get_digits(self.env)[1]
+        # 2 units left on 1 pack of 3 are 0.666... pack, stored as 0.67 pack
+        # (2.01 units): more than what's left, so call them off in units.
+        if float_compare(
+            uom._compute_quantity(
+                float_round(product_uom_qty, precision_digits=digits),
+                product_uom,
+                round=False,
+            ),
+            uom._compute_quantity(product_uom_qty, product_uom, round=False),
+            precision_rounding=product_uom.rounding,
+        ):
+            product_uom_qty = uom._compute_quantity(
+                product_uom_qty, product_uom, round=False
+            )
+            uom = product_uom
         return {
             "product_id": self.product_id.id,
             "product_uom_qty": product_uom_qty,
-            "product_uom_id": self.product_uom_id.id,
+            "product_uom_id": uom.id,
         }
 
     def _prepare_call_of_vals_to_deliver_blanket_remaining_qty(self):

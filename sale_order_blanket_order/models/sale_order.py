@@ -532,7 +532,6 @@ class SaleOrder(models.Model):
             if not blanket_lines:
                 continue
             remaining_qty = sum(blanket_lines.mapped("call_off_remaining_qty"))
-            rounding = blanket_lines[0].product_uom_id.rounding
             if (
                 float_compare(
                     remaining_qty,
@@ -549,13 +548,18 @@ class SaleOrder(models.Model):
                     if not call_off:
                         call_off = line.order_id._create_call_off_order(blanket_order)
                         new_call_off_by_blanket_order[blanket_line.order_id] = call_off
-                    qty_deliverable = blanket_line.call_off_remaining_qty
+                    # quantities are compared in the order line UoM
+                    qty_deliverable = blanket_line.product_uom_id._compute_quantity(
+                        blanket_line.call_off_remaining_qty,
+                        line.product_uom_id,
+                        round=False,
+                    )
                     original_order = line.order_id
                     if (
                         float_compare(
                             qty_deliverable,
                             line.product_uom_qty,
-                            precision_rounding=rounding,
+                            precision_rounding=line.product_uom_id.rounding,
                         )
                         >= 0
                     ):

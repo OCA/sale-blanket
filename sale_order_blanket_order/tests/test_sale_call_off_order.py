@@ -215,6 +215,62 @@ class TestSaleCallOffOrder(SaleOrderBlanketOrderCase):
         )
         self.assertEqual(self.blanket_so.call_off_order_count, 2)
 
+    def _call_off_units_from_pack(self, quantities):
+        blanket_line = self.blanket_so.order_line.filtered(
+            lambda line: line.product_id == self.product_2
+        )
+        blanket_line.write(
+            {"product_uom_id": self.product_2_pack3.id, "product_uom_qty": 1}
+        )
+        self.blanket_so.action_confirm()
+        for qty in quantities:
+            self.env["sale.order"].create(
+                {
+                    "order_type": "call_off",
+                    "partner_id": self.partner.id,
+                    "blanket_order_id": self.blanket_so.id,
+                    "order_line": [
+                        Command.create(
+                            {"product_id": self.product_2.id, "product_uom_qty": qty}
+                        )
+                    ],
+                }
+            ).action_confirm()
+        return blanket_line
+
+    def _assert_all_called_off(self, blanket_line, quantities):
+        self.assertAlmostEqual(blanket_line.call_off_remaining_qty, 0.0)
+        self.assertEqual(blanket_line.move_ids.mapped("product_qty"), quantities)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_units_from_pack(self):
+        blanket_line = self._call_off_units_from_pack([1.0, 2.0])
+        self._assert_all_called_off(blanket_line, [1.0, 2.0])
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_units_from_pack_one_by_one(self):
+        # core rounds qty_procured per move (0.33 pack each): the last unit
+        # must still fit in what's left on the blanket line
+        blanket_line = self._call_off_units_from_pack([1.0, 1.0, 1.0])
+        self._assert_all_called_off(blanket_line, [1.0, 1.0, 1.0])
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_deliver_remaining_units_from_pack(self):
+        # 2 units left on a pack of 3: 0.666... pack, which a call-off line
+        # can't hold in packs (rounded to 0.67 pack = 2.01 units)
+        blanket_line = self._call_off_units_from_pack([1.0])
+        wizard = self.env["sale.order.deliver.remaining.wizard"].browse(
+            self.blanket_so.action_deliver_remaining()["res_id"]
+        )
+        wizard.wizard_line_ids = wizard.wizard_line_ids.filtered(
+            lambda line: line.sale_order_line_id == blanket_line
+        )
+        call_off = self.env["sale.order"].browse(
+            wizard.action_create_call_off()["res_id"]
+        )
+        call_off.action_confirm()
+        self._assert_all_called_off(blanket_line, [1.0, 2.0])
+
 
 class TestSaleCallOffOrderProcessing(SaleOrderBlanketOrderCase):
     @classmethod

@@ -71,13 +71,14 @@ class SaleOrderDelierRemainingWizard(models.TransientModel):
         call_off_lines = []
         for wizard_line in self.wizard_line_ids:
             if wizard_line.qty_to_deliver > 0:
+                blanket_line = wizard_line.sale_order_line_id
                 line_vals = {
-                    "product_id": wizard_line.product_id.id,
-                    "product_uom_qty": wizard_line.qty_to_deliver,
-                    "product_uom_id": wizard_line.sale_order_line_id.product_uom_id.id,
-                    "name": wizard_line.sale_order_line_id.name,
+                    **blanket_line._prepare_call_of_vals_to_deliver_quantity(
+                        wizard_line.qty_to_deliver
+                    ),
+                    "name": blanket_line.name,
                     "price_unit": 0.0,
-                    "tax_ids": [(6, 0, wizard_line.sale_order_line_id.tax_ids.ids)],
+                    "tax_ids": [(6, 0, blanket_line.tax_ids.ids)],
                     "order_id": self.order_id.id,
                 }
                 call_off_lines.append((0, 0, line_vals))
