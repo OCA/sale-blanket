@@ -479,6 +479,25 @@ class SaleOrderLine(models.Model):
         res["call_off_sale_line_id"] = call_off_sale_line_id
         return res
 
+    def _get_call_off_order_to_deliver(self):
+        """Return the call-off order on behalf of which the current (blanket
+        order) line is being processed to launch the stock rule.
+
+        When the reservation strategy of a blanket order is "at_call_off", the
+        stock rule is always launched on the blanket order line, never on the
+        call-off order line itself (see ``_launch_stock_rule_for_call_off_line``
+        below). The call-off order line is only available through the
+        ``call_off_sale_line_id`` context key, set in
+        ``_forward_stock_rule_to_blanket_order``.
+
+        Returns an empty recordset if the current line is not processed on
+        behalf of a call-off order.
+        """
+        call_off_line_id = self.env.context.get("call_off_sale_line_id")
+        if not call_off_line_id:
+            return self.env["sale.order"].browse()
+        return self.browse(call_off_line_id).order_id
+
     def _compute_tax_id(self):
         # Overload to consider the call-off order lines in the computation
         # For these lines we don't want to apply taxes. If we don't enforce
@@ -691,6 +710,17 @@ class SaleOrderLine(models.Model):
             )
             .create({})
         )
+        call_off_order = self._get_call_off_order_to_deliver()
+        if call_off_order:
+            # Ensure that that the call-off order order to deliver for the
+            # same date are grouped together in the same picking if possible.
+            # This is done by setting the date_planned of the wizard to the
+            # commitment date of the call-off order if it is set, otherwise to
+            # the date_order of the call-off order. sale_manual_delivery will
+            # use this date as criteria into the procurement group.
+            wizard.date_planned = (
+                call_off_order.commitment_date or call_off_order.date_order
+            )
         wizard.line_ids.quantity = qty_to_deliver
         wizard.confirm()
 
