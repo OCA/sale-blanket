@@ -887,14 +887,18 @@ class SaleOrderLine(models.Model):
         )
         if not references:
             return
+        # Stock references are technical records no group can delete, and a
+        # reference must be kept for any move using it, visible or not to the
+        # user canceling the call-off order.
         used_references = (
             self.env["stock.move"]
+            .sudo()
             .search(
                 [("reference_ids", "in", references.ids), ("state", "!=", "cancel")]
             )
             .reference_ids
         )
-        (references - used_references).unlink()
+        (references - used_references).sudo().unlink()
 
     def write(self, values):
         self._blanket_check_update_product_uom_qty(values)

@@ -4,6 +4,7 @@ import freezegun
 
 from odoo import Command
 from odoo.exceptions import UserError, ValidationError
+from odoo.tests import new_test_user
 
 from .common import SaleOrderBlanketOrderCase
 
@@ -488,6 +489,26 @@ class TestSaleCallOffOrderProcessing(SaleOrderBlanketOrderCase):
         self.assertFalse(reference.exists())
         self.assertEqual(blanket_line.call_off_remaining_qty, remaining_qty)
         self.assertEqual(blanket_line.qty_to_procure, blanket_line.product_uom_qty)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_cancel_call_off_order_as_salesman(self):
+        # No group can delete stock references: the unused ones are removed
+        # whatever the rights of the user canceling the call-off order.
+        salesman = new_test_user(
+            self.env,
+            login="call_off_salesman",
+            groups="sales_team.group_sale_salesman_all_leads,stock.group_stock_user",
+        )
+        order = self._create_call_off_order(5.0, commitment_date="2025-02-10 10:00:00")
+        order.action_confirm()
+        moves = order.order_line.blanket_move_ids
+        reference = moves.reference_ids
+
+        order.with_user(salesman)._action_cancel()
+
+        self.assertEqual(order.state, "cancel")
+        self.assertEqual(set(moves.mapped("state")), {"cancel"})
+        self.assertFalse(reference.exists())
 
     @freezegun.freeze_time("2025-02-01")
     def test_cancel_call_off_order_sharing_reference(self):
