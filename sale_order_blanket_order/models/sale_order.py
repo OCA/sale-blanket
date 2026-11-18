@@ -741,6 +741,9 @@ class SaleOrder(models.Model):
         self.ensure_one()
         vals = self._get_default_call_off_order_values(self)
         vals["commitment_date"] = self.blanket_validity_end_date
+        # Same addresses as the call-off orders created from the blanket order
+        vals["partner_invoice_id"] = self.partner_invoice_id.id
+        vals["partner_shipping_id"] = self.partner_shipping_id.id
         return vals
 
     def _split_recrodset_for_reservation_strategy(self, strategy):
