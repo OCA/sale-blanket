@@ -228,6 +228,11 @@ msgid "Finalize expired sale blanket orders"
 msgstr ""
 
 #. module: sale_order_blanket_order
+#: model:ir.model.fields.selection,name:sale_order_blanket_order.selection__sale_order__blanket_reservation_strategy__fake
+msgid "For tests"
+msgstr ""
+
+#. module: sale_order_blanket_order
 #: model_terms:ir.ui.view,arch_db:sale_order_blanket_order.sale_order_form_view
 msgid "From"
 msgstr ""
