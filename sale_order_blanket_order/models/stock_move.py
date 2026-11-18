@@ -2,7 +2,6 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
 from odoo import Command, api, fields, models
-from odoo.tools import float_compare
 
 
 class StockMove(models.Model):
@@ -25,7 +24,7 @@ class StockMove(models.Model):
         operation has started or its whole qty feeds the given destination moves.
         """
         self.ensure_one()
-        if any(self.move_line_ids.mapped("qty_done")):
+        if any(self.move_line_ids.mapped("picked")):
             return self.browse()
         vals_list = self._split(sum(dest_moves.mapped("product_qty")))
         if not vals_list:
@@ -44,24 +43,19 @@ class StockMove(models.Model):
         move line reservations.
         """
         self.ensure_one()
-        rounding = self.product_id.uom_id.rounding
+        uom = self.product_id.uom_id
         exceeding_qty = (
-            sum(self.move_line_ids.mapped("reserved_qty")) - self.product_qty
+            sum(self.move_line_ids.mapped("quantity_product_uom")) - self.product_qty
         )
         for move_line in self.move_line_ids.sorted("id", reverse=True):
-            if float_compare(exceeding_qty, 0, precision_rounding=rounding) <= 0:
+            if uom.compare(exceeding_qty, 0) <= 0:
                 break
-            if (
-                float_compare(
-                    move_line.reserved_qty, exceeding_qty, precision_rounding=rounding
-                )
-                <= 0
-            ):
-                exceeding_qty -= move_line.reserved_qty
+            if uom.compare(move_line.quantity_product_uom, exceeding_qty) <= 0:
+                exceeding_qty -= move_line.quantity_product_uom
                 move_line.unlink()
                 continue
-            move_line.reserved_uom_qty = move_line.product_id.uom_id._compute_quantity(
-                move_line.reserved_qty - exceeding_qty,
+            move_line.quantity = uom._compute_quantity(
+                move_line.quantity_product_uom - exceeding_qty,
                 move_line.product_uom_id,
                 rounding_method="HALF-UP",
             )

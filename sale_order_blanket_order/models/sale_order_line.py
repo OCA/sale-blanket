@@ -3,7 +3,7 @@
 import functools
 from collections import defaultdict
 
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import SQL, float_compare, float_is_zero, float_round
 
@@ -856,7 +856,7 @@ class SaleOrderLine(models.Model):
         if done_moves:
             orders = done_moves.call_off_sale_line_id.order_id
             raise UserError(
-                _(
+                self.env._(
                     "The call-off order(s) %(orders)s cannot be canceled since "
                     "some products have already been delivered.",
                     orders=", ".join(orders.mapped("name")),
@@ -865,34 +865,36 @@ class SaleOrderLine(models.Model):
 
     def _cancel_call_off_blanket_moves(self):
         """Cancel the stock moves created on the blanket order for the call-off
-        order lines and remove the procurement groups no more used.
+        order lines and remove the stock references no more used.
         """
         call_off_lines = self.filtered(lambda line: line.order_type == "call_off")
         call_off_lines._check_call_off_blanket_moves_to_cancel()
         moves = call_off_lines._prepare_call_off_blanket_moves_to_cancel()
-        groups = moves.group_id
+        references = moves.reference_ids
         moves._action_cancel()
-        call_off_lines._unlink_call_off_procurement_groups(groups)
+        call_off_lines._unlink_call_off_stock_references(references)
 
-    def _unlink_call_off_procurement_groups(self, groups):
-        """Unlink the procurement groups created on the blanket order for the
+    def _unlink_call_off_stock_references(self, references):
+        """Unlink the stock references created on the blanket order for the
         call-off order lines.
 
         Since the deliveries of several call-off orders can be grouped into the
-        same procurement group, a group is only removed if it's no more used by
+        same stock reference, a reference is only removed if it's no more used by
         any active stock move.
         """
-        groups = groups.filtered(
-            lambda group: group.sale_id in self.order_id.blanket_order_id
+        references = references.filtered(
+            lambda reference: reference.sale_ids & self.order_id.blanket_order_id
         )
-        if not groups:
+        if not references:
             return
-        used_groups = (
+        used_references = (
             self.env["stock.move"]
-            .search([("group_id", "in", groups.ids), ("state", "!=", "cancel")])
-            .group_id
+            .search(
+                [("reference_ids", "in", references.ids), ("state", "!=", "cancel")]
+            )
+            .reference_ids
         )
-        (groups - used_groups).unlink()
+        (references - used_references).unlink()
 
     def write(self, values):
         self._blanket_check_update_product_uom_qty(values)

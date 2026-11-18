@@ -5,7 +5,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 
-from odoo import Command, _, api, fields, models
+from odoo import Command, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.fields import Domain
 from odoo.tools import float_compare
@@ -835,6 +835,6 @@ class SaleOrder(models.Model):
         invalid_orders = self.filtered(lambda order: order.order_type != "call_off")
         if invalid_orders:
             raise ValidationError(
-                _("Only call-off orders can be canceled as call-off orders.")
+                self.env._("Only call-off orders can be canceled as call-off orders.")
             )
         self.order_line._cancel_call_off_blanket_moves()
