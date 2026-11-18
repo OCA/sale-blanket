@@ -13,8 +13,8 @@ class SaleOrderLine(models.Model):
         """Release the reservation of the stock for the order."""
         self.move_ids.filtered(lambda m: m.used_for_sale_reservation)._action_cancel()
 
-    def _prepare_reserve_procurement_values(self, group_id=None):
-        values = super()._prepare_reserve_procurement_values(group_id)
+    def _prepare_reserve_procurement_values(self, reference):
+        values = super()._prepare_reserve_procurement_values(reference)
         # The reservation is made for the blanket order, not for the call-off
         # order being processed when the reservation is updated.
         values["call_off_sale_line_id"] = False
