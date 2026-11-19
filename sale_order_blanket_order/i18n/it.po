@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-07-17 14:30+0000\n"
-"PO-Revision-Date: 2026-11-18 17:46+0000\n"
+"PO-Revision-Date: 2026-11-19 10:46+0000\n"
 "Last-Translator: mymage <stefano.consolaro@mymage.it>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -177,7 +177,7 @@ msgstr "Crea chiamata da OV se possibile"
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_res_company__create_call_off_from_so_if_possible
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_res_config_settings__create_call_off_from_so_if_possible
 msgid "Create Call-Off from SO if possible"
-msgstr "Crea chiavata da OV se possibile"
+msgstr "Crea chiamata da OV se possibile"
 
 #. module: sale_order_blanket_order
 #: model_terms:ir.ui.view,arch_db:sale_order_blanket_order.view_create_call_off_wizard_form
@@ -275,8 +275,8 @@ msgstr ""
 "Se selezionata, questa opzione farà in modo che i prodotti vengano prelevati "
 "con lo stesso imballaggio definito nelle righe dell'ordine quadro. Se non "
 "selezionata, il sistema non terrà conto né dell'imballaggio definito nelle "
-"righe dell'ordine quadro né di quello definito nelle righe degli ordini di "
-"prelievo."
+"righe dell'ordine quadro né di quello definito nelle righe degli ordini a "
+"chiamata."
 
 #. module: sale_order_blanket_order
 #: model:ir.model.fields,help:sale_order_blanket_order.field_res_company__create_call_off_from_so_if_possible
@@ -324,7 +324,7 @@ msgstr ""
 "Se questa opzione è abilitata, verrà generato un ordine a chiamata da un "
 "ordine di vendita se quest'ultimo contiene\n"
 "                            prodotti che fanno parte di un ordine quadro "
-"aperto. L'ordine a chiamata verrà generato con gli stessi prodotti e "
+"quadro. L'ordine a chiamata verrà generato con gli stessi prodotti e "
 "quantità dell'ordine di vendita, \n"
 "                            a condizione che l'ordine quadro disponga di una "
 "quantità disponibile sufficiente. Se l'ordine quadro non dispone di una "
@@ -574,12 +574,12 @@ msgstr "Regola di giacenza"
 #. module: sale_order_blanket_order
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order_line__blanket_strict_packaging
 msgid "Strict Packaging"
-msgstr "Imballaggio ristretto"
+msgstr "Imballaggio rigido"
 
 #. module: sale_order_blanket_order
 #: model:ir.model.fields,field_description:sale_order_blanket_order.field_sale_order__blanket_strict_packaging
 msgid "Strict Packaging ?"
-msgstr "Imballaggio ristretto?"
+msgstr "Imballaggio rigido?"
 
 #. module: sale_order_blanket_order
 #. odoo-python
