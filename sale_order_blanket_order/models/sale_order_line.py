@@ -768,6 +768,22 @@ class SaleOrderLine(models.Model):
             raise ValueError(
                 f"Invalid blanket reservation strategy: {reservation_strategy}."
             )
+        self._deliver_call_off_qty_with_manual_delivery(qty_to_deliver)
+
+    def _deliver_call_off_qty_with_manual_delivery(self, qty_to_deliver):
+        """Deliver a quantity of the blanket order line for the call-off order
+        being processed, through the manual delivery wizard.
+
+        The delivery is planned as the call-off order line would be: to the
+        shipping address of the call-off order, on its dates and in its
+        packaging. sale_manual_delivery groups the deliveries by address and
+        date, so the call-off orders shipped to the same address on the same
+        day share their picking, while the others get their own one.
+
+        :param qty_to_deliver: quantity to deliver, in the UoM of the blanket
+            order line
+        """
+        self.ensure_one()
         wizard = (
             self.env["manual.delivery"]
             .with_context(
@@ -779,15 +795,16 @@ class SaleOrderLine(models.Model):
         )
         call_off_order = self._get_call_off_order_to_deliver()
         if call_off_order:
-            # Ensure that that the call-off order order to deliver for the
-            # same date are grouped together in the same picking if possible.
-            # This is done by setting the date_planned of the wizard to the
-            # commitment date of the call-off order if it is set, otherwise to
-            # the date_order of the call-off order. sale_manual_delivery will
-            # use this date as criteria into the procurement group.
-            wizard.date_planned = (
-                call_off_order.commitment_date or call_off_order.date_order
+            call_off_line = self.browse(self.env.context["call_off_sale_line_id"])
+            call_off_values = call_off_line._prepare_procurement_values()
+            wizard.partner_id = call_off_order.partner_shipping_id
+            # The wizard plans the delivery on a day: take the day of the
+            # call-off's delivery in the user's time zone, not the UTC one.
+            wizard.date_planned = fields.Date.context_today(
+                self, call_off_values["date_planned"]
             )
+            wizard.date_deadline = call_off_values["date_deadline"]
+            wizard.line_ids.packaging_uom_id = call_off_values["packaging_uom_id"]
         wizard.line_ids.quantity = qty_to_deliver
         wizard.confirm()
 
