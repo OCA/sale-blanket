@@ -539,6 +539,10 @@ class SaleOrderLine(models.Model):
         res = super()._prepare_procurement_values()
         call_off_sale_line_id = self.env.context.get("call_off_sale_line_id")
         res["call_off_sale_line_id"] = call_off_sale_line_id
+        if call_off_sale_line_id:
+            # The delivery is due on the date requested by the call-off order,
+            # not on the commitment date of the blanket order.
+            res["date_deadline"] = self._get_call_off_delivery_date()
         return res
 
     def _get_call_off_order_to_deliver(self):
@@ -559,6 +563,16 @@ class SaleOrderLine(models.Model):
         if not call_off_line_id:
             return self.env["sale.order"].browse()
         return self.browse(call_off_line_id).order_id
+
+    def _get_call_off_delivery_date(self):
+        """Return the delivery date requested by the call-off order being
+        delivered through the current (blanket order) line.
+
+        :return: the commitment date of the call-off order, otherwise its order
+            date; False when no call-off order is being delivered
+        """
+        call_off_order = self._get_call_off_order_to_deliver()
+        return call_off_order.commitment_date or call_off_order.date_order
 
     def _compute_tax_ids(self):
         # Overload to consider the call-off order lines in the computation
@@ -768,6 +782,21 @@ class SaleOrderLine(models.Model):
             raise ValueError(
                 f"Invalid blanket reservation strategy: {reservation_strategy}."
             )
+        self._deliver_call_off_qty_with_manual_delivery(qty_to_deliver)
+
+    def _deliver_call_off_qty_with_manual_delivery(self, qty_to_deliver):
+        """Deliver a quantity of the blanket order line for the call-off order
+        being processed, through the manual delivery wizard.
+
+        The delivery goes to the shipping address of the call-off order, on the
+        date it requests. sale_manual_delivery groups the deliveries by address
+        and date, so the call-off orders shipped to the same address on the same
+        day share their picking, while the others get their own one.
+
+        :param qty_to_deliver: quantity to deliver, in the UoM of the blanket
+            order line
+        """
+        self.ensure_one()
         wizard = (
             self.env["manual.delivery"]
             .with_context(
@@ -779,14 +808,11 @@ class SaleOrderLine(models.Model):
         )
         call_off_order = self._get_call_off_order_to_deliver()
         if call_off_order:
-            # Ensure that that the call-off order order to deliver for the
-            # same date are grouped together in the same picking if possible.
-            # This is done by setting the date_planned of the wizard to the
-            # commitment date of the call-off order if it is set, otherwise to
-            # the date_order of the call-off order. sale_manual_delivery will
-            # use this date as criteria into the procurement group.
-            wizard.date_planned = (
-                call_off_order.commitment_date or call_off_order.date_order
+            wizard.partner_id = call_off_order.partner_shipping_id
+            # The wizard plans the delivery on a day: take the day of the
+            # call-off's delivery in the user's time zone, not the UTC one.
+            wizard.date_planned = fields.Date.context_today(
+                self, self._get_call_off_delivery_date()
             )
         wizard.line_ids.quantity = qty_to_deliver
         wizard.confirm()

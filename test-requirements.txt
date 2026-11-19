@@ -1,0 +1,1 @@
+odoo-addon-sale_manual_delivery @ git+https://github.com/OCA/sale-workflow.git@refs/pull/4808/head#subdirectory=sale_manual_delivery
