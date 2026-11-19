@@ -636,9 +636,7 @@ class SaleOrderLine(models.Model):
         # the stock rule is launched on a single blanket order line for the
         # quantity still to deliver on this line.
         # We must also take care of the reservation strategy of the blanket order.
-        call_off_lines = self.browse()
-        if not self.env.context.get("disable_call_off_stock_rule"):
-            call_off_lines = self.filtered(lambda line: line.order_type == "call_off")
+        call_off_lines = self.filtered(lambda line: line.order_type == "call_off")
         other_lines = self - call_off_lines
         res = super(SaleOrderLine, other_lines)._action_launch_stock_rule(
             previous_product_uom_qty=previous_product_uom_qty
