@@ -83,14 +83,12 @@ class SaleOrderLine(models.Model):
             # reserve on the blanket order.
             self._prebook_stock_for_call_off_remaining_qty(previous_product_uom_qty)
 
-            # run normal delivery rule on the blanket order. This will create the
-            # move on the call off order for the qty not reserved IOW the qty to
-            # deliver.
-            self.with_context(
-                disable_call_off_stock_rule=True
-            )._action_launch_stock_rule(
-                previous_product_uom_qty=previous_product_uom_qty
-            )
+            # Deliver the call-off quantity as with the "at_call_off" strategy,
+            # at the address and date of the call-off order. This must come
+            # after the new reservation: the reservation moves count in the
+            # quantity already procured, so only the call-off quantity is left
+            # to deliver once the remaining quantity is reserved again.
+            self._deliver_call_off_qty_with_manual_delivery(qty_to_deliver)
         else:
             super()._launch_stock_rule_for_call_off_line_qty(
                 qty_to_deliver, previous_product_uom_qty

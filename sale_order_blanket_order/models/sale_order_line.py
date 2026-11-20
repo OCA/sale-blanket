@@ -539,7 +539,40 @@ class SaleOrderLine(models.Model):
         res = super()._prepare_procurement_values()
         call_off_sale_line_id = self.env.context.get("call_off_sale_line_id")
         res["call_off_sale_line_id"] = call_off_sale_line_id
+        if call_off_sale_line_id:
+            # The delivery is due on the date requested by the call-off order,
+            # not on the commitment date of the blanket order.
+            res["date_deadline"] = self._get_call_off_delivery_date()
         return res
+
+    def _get_call_off_order_to_deliver(self):
+        """Return the call-off order on behalf of which the current (blanket
+        order) line is being processed to launch the stock rule.
+
+        When the reservation strategy of a blanket order is "at_call_off", the
+        stock rule is always launched on the blanket order line, never on the
+        call-off order line itself (see ``_launch_stock_rule_for_call_off_line``
+        below). The call-off order line is only available through the
+        ``call_off_sale_line_id`` context key, set in
+        ``_forward_stock_rule_to_blanket_order``.
+
+        Returns an empty recordset if the current line is not processed on
+        behalf of a call-off order.
+        """
+        call_off_line_id = self.env.context.get("call_off_sale_line_id")
+        if not call_off_line_id:
+            return self.env["sale.order"].browse()
+        return self.browse(call_off_line_id).order_id
+
+    def _get_call_off_delivery_date(self):
+        """Return the delivery date requested by the call-off order being
+        delivered through the current (blanket order) line.
+
+        :return: the commitment date of the call-off order, otherwise its order
+            date; False when no call-off order is being delivered
+        """
+        call_off_order = self._get_call_off_order_to_deliver()
+        return call_off_order.commitment_date or call_off_order.date_order
 
     def _compute_tax_ids(self):
         # Overload to consider the call-off order lines in the computation
@@ -617,9 +650,7 @@ class SaleOrderLine(models.Model):
         # the stock rule is launched on a single blanket order line for the
         # quantity still to deliver on this line.
         # We must also take care of the reservation strategy of the blanket order.
-        call_off_lines = self.browse()
-        if not self.env.context.get("disable_call_off_stock_rule"):
-            call_off_lines = self.filtered(lambda line: line.order_type == "call_off")
+        call_off_lines = self.filtered(lambda line: line.order_type == "call_off")
         other_lines = self - call_off_lines
         res = super(SaleOrderLine, other_lines)._action_launch_stock_rule(
             previous_product_uom_qty=previous_product_uom_qty
@@ -749,6 +780,21 @@ class SaleOrderLine(models.Model):
             raise ValueError(
                 f"Invalid blanket reservation strategy: {reservation_strategy}."
             )
+        self._deliver_call_off_qty_with_manual_delivery(qty_to_deliver)
+
+    def _deliver_call_off_qty_with_manual_delivery(self, qty_to_deliver):
+        """Deliver a quantity of the blanket order line for the call-off order
+        being processed, through the manual delivery wizard.
+
+        The delivery goes to the shipping address of the call-off order, on the
+        date it requests. sale_manual_delivery groups the deliveries by address
+        and date, so the call-off orders shipped to the same address on the same
+        day share their picking, while the others get their own one.
+
+        :param qty_to_deliver: quantity to deliver, in the UoM of the blanket
+            order line
+        """
+        self.ensure_one()
         wizard = (
             self.env["manual.delivery"]
             .with_context(
@@ -758,6 +804,14 @@ class SaleOrderLine(models.Model):
             )
             .create({})
         )
+        call_off_order = self._get_call_off_order_to_deliver()
+        if call_off_order:
+            wizard.partner_id = call_off_order.partner_shipping_id
+            # The wizard plans the delivery on a day: take the day of the
+            # call-off's delivery in the user's time zone, not the UTC one.
+            wizard.date_planned = fields.Date.context_today(
+                self, self._get_call_off_delivery_date()
+            )
         wizard.line_ids.quantity = qty_to_deliver
         wizard.confirm()
 

@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 import freezegun
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import new_test_user
 
@@ -408,23 +408,26 @@ class TestSaleCallOffOrderProcessing(SaleOrderBlanketOrderCase):
             blanket_lines,
         )
 
-    def _create_call_off_order(self, product_uom_qty, commitment_date=None):
-        return self.env["sale.order"].create(
-            {
-                "order_type": "call_off",
-                "partner_id": self.partner.id,
-                "blanket_order_id": self.blanket_so.id,
-                "commitment_date": commitment_date,
-                "order_line": [
-                    Command.create(
-                        {
-                            "product_id": self.product_1.id,
-                            "product_uom_qty": product_uom_qty,
-                        }
-                    ),
-                ],
-            }
-        )
+    def _create_call_off_order(
+        self, product_uom_qty, commitment_date=None, partner_shipping=None
+    ):
+        vals = {
+            "order_type": "call_off",
+            "partner_id": self.partner.id,
+            "blanket_order_id": self.blanket_so.id,
+            "commitment_date": commitment_date,
+            "order_line": [
+                Command.create(
+                    {
+                        "product_id": self.product_1.id,
+                        "product_uom_qty": product_uom_qty,
+                    }
+                ),
+            ],
+        }
+        if partner_shipping:
+            vals["partner_shipping_id"] = partner_shipping.id
+        return self.env["sale.order"].create(vals)
 
     def _set_pulled_pick_ship(self):
         """Deliver in 2 steps, the pick being pulled by the ship.
@@ -650,6 +653,145 @@ class TestSaleCallOffOrderProcessing(SaleOrderBlanketOrderCase):
         self.assertEqual(moves_2.state, "assigned")
         self.assertEqual(moves_2.quantity, 3.0)
         self.assertEqual(moves_2.move_line_ids, move_line_2)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_orders_with_same_commitment_date_are_consolidated(self):
+        # Call-off orders sharing the same requested delivery date are
+        # consolidated into a single delivery, to avoid needlessly
+        # multiplying the number of deliveries (and so the logistic cost)
+        # for a blanket order.
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_2.action_confirm()
+
+        picking_1 = order_1.order_line.blanket_move_ids.picking_id
+        picking_2 = order_2.order_line.blanket_move_ids.picking_id
+
+        self.assertTrue(picking_1)
+        self.assertEqual(picking_1, picking_2)
+        # The delivered/invoiced quantities accounting and the native
+        # traceability stay on the blanket order: the reference (and so the
+        # picking) is linked to it through the standard "sale_id" field.
+        self.assertEqual(picking_1.sale_id, self.blanket_so)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_orders_with_different_commitment_date_are_not_consolidated(
+        self,
+    ):
+        # Call-off orders requested for different delivery dates must not be
+        # merged into the same delivery.
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00"
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-17 10:00:00"
+        )
+        order_2.action_confirm()
+
+        picking_1 = order_1.order_line.blanket_move_ids.picking_id
+        picking_2 = order_2.order_line.blanket_move_ids.picking_id
+
+        self.assertTrue(picking_1)
+        self.assertTrue(picking_2)
+        self.assertNotEqual(picking_1, picking_2)
+        self.assertNotEqual(picking_1.reference_ids, picking_2.reference_ids)
+        self.assertEqual(picking_1.sale_id, self.blanket_so)
+        self.assertEqual(picking_2.sale_id, self.blanket_so)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_orders_delivered_at_their_own_address(self):
+        """Test each call-off order is delivered at its shipping address.
+
+        Call-off orders for the same day but to different addresses get
+        their own picking, the address being set on the picking and its moves.
+        """
+        address_1 = self._create_delivery_address("Warehouse 1")
+        address_2 = self._create_delivery_address("Warehouse 2")
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 10:00:00", partner_shipping=address_1
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            3.0, commitment_date="2025-02-10 10:00:00", partner_shipping=address_2
+        )
+        order_2.action_confirm()
+
+        moves_1 = order_1.order_line.blanket_move_ids
+        moves_2 = order_2.order_line.blanket_move_ids
+        self.assertNotEqual(moves_1.picking_id, moves_2.picking_id)
+        self.assertEqual(moves_1.picking_id.partner_id, address_1)
+        self.assertEqual(moves_1.partner_id, address_1)
+        self.assertEqual(moves_2.picking_id.partner_id, address_2)
+        self.assertEqual(moves_2.partner_id, address_2)
+        self.assertEqual(moves_1.picking_id.sale_id, self.blanket_so)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_orders_to_same_address_share_picking(self):
+        """Test call-off orders to the same address and day share a picking."""
+        address = self._create_delivery_address("Warehouse")
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-10 08:00:00", partner_shipping=address
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            3.0, commitment_date="2025-02-10 14:00:00", partner_shipping=address
+        )
+        order_2.action_confirm()
+
+        picking = order_1.order_line.blanket_move_ids.picking_id
+        self.assertEqual(order_2.order_line.blanket_move_ids.picking_id, picking)
+        self.assertEqual(picking.partner_id, address)
+        self.assertEqual(picking.move_ids.partner_id, address)
+        self.assertEqual(sum(picking.move_ids.mapped("product_uom_qty")), 8.0)
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_orders_same_local_day_share_picking(self):
+        """Test call-off orders due the same local day share a picking.
+
+        In the user's time zone, Europe/Brussels, 00:30 and 10:00 on 10/02 are
+        on two different days in UTC: the delivery is planned on the user's day.
+        """
+        self.env.user.tz = "Europe/Brussels"
+        address = self._create_delivery_address("Warehouse")
+        order_1 = self._create_call_off_order(
+            5.0, commitment_date="2025-02-09 23:30:00", partner_shipping=address
+        )
+        order_1.action_confirm()
+        order_2 = self._create_call_off_order(
+            3.0, commitment_date="2025-02-10 09:00:00", partner_shipping=address
+        )
+        order_2.action_confirm()
+
+        picking = order_1.order_line.blanket_move_ids.picking_id
+        self.assertEqual(order_2.order_line.blanket_move_ids.picking_id, picking)
+        self.assertEqual(
+            picking.scheduled_date.date(), fields.Date.to_date("2025-02-10")
+        )
+
+    @freezegun.freeze_time("2025-02-01")
+    def test_call_off_order_delivery_date(self):
+        """Test the picking is scheduled and due on the call-off order date.
+
+        The blanket order is due at the start of its validity period, the
+        delivery of a call-off order on the date it requests.
+        """
+        order = self._create_call_off_order(5.0, commitment_date="2025-02-10 10:00:00")
+        order.action_confirm()
+
+        moves = order.order_line.blanket_move_ids
+        self.assertEqual(
+            moves.picking_id.scheduled_date.date(),
+            fields.Date.to_date("2025-02-10"),
+        )
+        self.assertEqual(
+            moves.date_deadline, fields.Datetime.to_datetime("2025-02-10 10:00:00")
+        )
 
     @freezegun.freeze_time("2025-02-01")
     def test_cancel_call_off_order_delivered(self):

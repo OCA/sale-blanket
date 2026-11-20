@@ -157,6 +157,12 @@ class SaleOrderBlanketOrderCase(BaseCommon):
         ).action_apply_inventory()
 
     @classmethod
+    def _create_delivery_address(cls, name):
+        return cls.env["res.partner"].create(
+            {"name": name, "parent_id": cls.partner.id, "type": "delivery"}
+        )
+
+    @classmethod
     def _set_call_off_auto_create_mode(cls, value):
         # Enable the auto create mode
         cls.env["res.config.settings"].create(
