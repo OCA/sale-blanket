@@ -1,0 +1,95 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sale_order_blanket_order_decentralized_invoicing
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: 2026-11-19 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model.fields,field_description:sale_order_blanket_order_decentralized_invoicing.field_account_move_line__call_off_sale_line_id
+msgid "Call-off Order Line"
+msgstr "Ligne de commande d'appel"
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model.fields,help:sale_order_blanket_order_decentralized_invoicing.field_account_move_line__call_off_sale_line_id
+msgid ""
+"Call-off order line whose delivered quantity is invoiced by this line of the"
+" blanket order."
+msgstr ""
+"Ligne de commande d'appel dont la quantité livrée est facturée par cette "
+"ligne de la commande-cadre."
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model,name:sale_order_blanket_order_decentralized_invoicing.model_res_company
+msgid "Companies"
+msgstr "Sociétés"
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model,name:sale_order_blanket_order_decentralized_invoicing.model_res_config_settings
+msgid "Config Settings"
+msgstr "Paramètres de configuration"
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model_terms:ir.ui.view,arch_db:sale_order_blanket_order_decentralized_invoicing.res_config_settings_form_view
+msgid ""
+"Default for new blanket orders: invoice the deliveries of a call-off order "
+"at its own invoice and shipping addresses, when they differ from the blanket"
+" order's ones."
+msgstr ""
+"Valeur par défaut des nouvelles commandes-cadres : facturer les livraisons "
+"d'une commande d'appel à ses propres adresses de facturation et de "
+"livraison, lorsqu'elles diffèrent de celles de la commande-cadre."
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model.fields,help:sale_order_blanket_order_decentralized_invoicing.field_res_company__blanket_invoice_call_off_at_own_address
+#: model:ir.model.fields,help:sale_order_blanket_order_decentralized_invoicing.field_res_config_settings__blanket_invoice_call_off_at_own_address
+msgid ""
+"Default value of the option on new blanket orders. When checked, the "
+"delivered quantities of a call-off order with other invoice or shipping "
+"addresses than its blanket order are invoiced at the addresses of the call-"
+"off order."
+msgstr ""
+"Valeur par défaut de l'option sur les nouvelles commandes-cadres. Si cochée, "
+"les quantités livrées d'une commande d'appel ayant d'autres adresses de "
+"facturation ou de livraison que sa commande-cadre sont facturées aux "
+"adresses de la commande d'appel."
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model.fields,field_description:sale_order_blanket_order_decentralized_invoicing.field_res_company__blanket_invoice_call_off_at_own_address
+#: model:ir.model.fields,field_description:sale_order_blanket_order_decentralized_invoicing.field_res_config_settings__blanket_invoice_call_off_at_own_address
+#: model:ir.model.fields,field_description:sale_order_blanket_order_decentralized_invoicing.field_sale_order__invoice_call_off_at_own_address
+msgid "Invoice Call-offs at their Addresses"
+msgstr "Facturer les commandes d'appel à leurs adresses"
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model,name:sale_order_blanket_order_decentralized_invoicing.model_account_move_line
+msgid "Journal Item"
+msgstr "Écriture comptable"
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model,name:sale_order_blanket_order_decentralized_invoicing.model_sale_order
+msgid "Sales Order"
+msgstr "Commande client"
+
+#. module: sale_order_blanket_order_decentralized_invoicing
+#: model:ir.model.fields,help:sale_order_blanket_order_decentralized_invoicing.field_sale_order__invoice_call_off_at_own_address
+msgid ""
+"When checked, the delivered quantities of a call-off order with other "
+"invoice or shipping addresses than this blanket order are invoiced at the "
+"addresses of the call-off order. Otherwise, all the quantities are invoiced "
+"at the addresses of the blanket order."
+msgstr ""
+"Si cochée, les quantités livrées d'une commande d'appel ayant d'autres "
+"adresses de facturation ou de livraison que cette commande-cadre sont "
+"facturées aux adresses de la commande d'appel. Sinon, toutes les quantités "
+"sont facturées aux adresses de la commande-cadre."
