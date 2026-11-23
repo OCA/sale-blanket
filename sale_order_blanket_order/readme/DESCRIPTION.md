@@ -46,6 +46,7 @@ No delivery is generated directly from the call-off order.
 It triggers:
 * Release of the reserved quantity in the blanket order.
 * Adjustment of stock reservations for the remaining quantities.
+* A delivery of the blanket order planned as the call-off order line would be: to the shipping address of the call-off order, on its dates (its commitment date, otherwise its order date plus the customer lead time) and in its packaging. Call-off orders shipped to the same address on the same day share their picking.
 
 
 # Standard Sales Orders
