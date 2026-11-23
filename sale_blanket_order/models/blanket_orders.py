@@ -513,14 +513,10 @@ class BlanketOrderLine(models.Model):
             currency=self.currency_id,
         )
 
-        if not self.pricelist_item_id:
-            # No pricelist rule found => no discount from pricelist
-            return pricelist_price
-
-        base_price = self._get_pricelist_price_before_discount()
-
-        # negative discounts (= surcharge) are included in the display price
-        return max(base_price, pricelist_price)
+        # Blanket order lines have no discount field where the difference between
+        # the base price and the pricelist price could be stored. The unit price
+        # must therefore keep the final price computed by the pricelist.
+        return pricelist_price
 
     def _get_pricelist_price_before_discount(self):
         # Copied and adapted from the sale module
